@@ -7,17 +7,109 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="header">
-    <h1>📊 Quota Dashboard</h1>
-    <span class="ts" id="ts">Đang tải...</span>
-  </div>
-  <div id="error-banner"></div>
-  <div class="cards" id="cards">
-    <div style="color:var(--fg-dim);font-size:11px;padding:20px 0;text-align:center">
-      Đang kết nối với Official Antigravity App...
+
+  <!-- ── Top Bar ─────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">Quota Dashboard</span>
+      <div class="topbar-status" id="refresh-status">
+        <span class="status-dot" id="status-dot"></span>
+        <span class="status-label" id="status-label">Connecting…</span>
+      </div>
     </div>
-  </div>
-  <div class="footer" id="footer"></div>
+    <div class="topbar-right">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none">
+          <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <input
+          id="search"
+          class="search-input"
+          type="text"
+          placeholder="Filter accounts… (⌘K)"
+          autocomplete="off"
+          spellcheck="false"
+        >
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Error Banner ─────────────────────────────────────────────── -->
+  <div id="error-banner"></div>
+
+  <!-- ── Aggregate Summary Strip ─────────────────────────────────── -->
+  <section class="summary-strip" id="summary-strip">
+    <div class="summary-stat">
+      <span class="stat-value" id="sum-total">—</span>
+      <span class="stat-label">Accounts</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat">
+      <span class="stat-value" id="sum-active">—</span>
+      <span class="stat-label">Active Now</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat">
+      <span class="stat-value" id="sum-ready">—</span>
+      <span class="stat-label">Ready to Switch</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat">
+      <span class="stat-value stat-warn" id="sum-low">—</span>
+      <span class="stat-label">Low</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat">
+      <span class="stat-value stat-crit" id="sum-exhausted">—</span>
+      <span class="stat-label">Depleted</span>
+    </div>
+  </section>
+
+  <!-- ── Main Table ───────────────────────────────────────────────── -->
+  <main class="table-wrap">
+    <table class="quota-table" id="quota-table">
+      <thead>
+        <tr>
+          <th class="col-account">Account</th>
+          <th class="col-pool" colspan="2">Gemini</th>
+          <th class="col-pool" colspan="2">Claude</th>
+          <th class="col-pool">Argon</th>
+          <th class="col-status">Status</th>
+        </tr>
+        <tr class="subheader">
+          <th></th>
+          <th class="col-sub">5-Hour</th>
+          <th class="col-sub">Weekly</th>
+          <th class="col-sub">5-Hour</th>
+          <th class="col-sub">Weekly</th>
+          <th class="col-sub">Weekly</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="row-loading">
+          <td colspan="7">Connecting to Antigravity…</td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+
+  <!-- ── Footer ──────────────────────────────────────────────────── -->
+  <footer class="foot" id="footer">
+    <span class="foot-safe">🔒 Read-only · 127.0.0.1 · Official App RPC</span>
+    <span class="foot-ts" id="ts"></span>
+  </footer>
+
+  <!-- ── Drawer ──────────────────────────────────────────────────── -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-title" id="drawer-title">Account Detail</div>
+      <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
 
   <script src="/app.js"></script>
 </body>

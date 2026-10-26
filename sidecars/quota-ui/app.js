@@ -1,247 +1,320 @@
 'use strict';
 
-/* ── Constants ─────────────────────────────────────────────────────── */
-const POLL_INTERVAL_MS = 15_000;
-const TICK_INTERVAL_MS = 1_000;
-const API_PATH         = '/api/quota';
+/* ── Constants ────────────────────────────────────────────────────────── */
+const POLL_MS = 15_000;
+const TICK_MS = 1_000;
+const API     = '/api/quota';
 
-const CATEGORIES = [
-  {
-    id: 'gemini',
-    title: 'Gemini Models',
-    icon: '✨',
-    getPools: (acc) => ({
-      h5: acc.pools.gemini_5h || acc.pools.gemini_flash,
-      wk: acc.pools.gemini_weekly || acc.pools.gemini_pro,
-    }),
-  },
-  {
-    id: 'argon',
-    title: 'Argon Models',
-    icon: '⚡',
-    getPools: (acc) => ({
-      h5: null, // Argon has no 5h bucket in Pro plan
-      wk: acc.pools.argon_weekly,
-    }),
-  },
-  {
-    id: 'claude',
-    title: 'Claude Models',
-    icon: '🧠',
-    getPools: (acc) => ({
-      h5: acc.pools.claude_5h || acc.pools.claude_gpt,
-      wk: acc.pools.claude_weekly,
-    }),
-  },
+/* ── State ────────────────────────────────────────────────────────────── */
+let lastData      = null;
+let filterText    = '';
+let countdowns    = {};   // key → { endsAt: Date, el: Element }
+let drawerAccount = null;
+
+/* ── Pool column definitions (order matches <thead>) ─────────────────── */
+const COLUMNS = [
+  { key: 'gemini_5h',    label: 'Gemini 5h'    },
+  { key: 'gemini_weekly',label: 'Gemini Wk'    },
+  { key: 'claude_5h',    label: 'Claude 5h'    },
+  { key: 'claude_weekly',label: 'Claude Wk'    },
+  { key: 'argon_weekly', label: 'Argon Wk'     },
 ];
 
-/* ── State ─────────────────────────────────────────────────────────── */
-let lastData   = null;
-let countdowns = {};  // key -> { endsAt: Date, el: Element }
-
-/* ── Countdown ticker ──────────────────────────────────────────────── */
-function formatDiff(diffMs) {
-  if (diffMs <= 0) return '✅ Đã hồi đầy';
-  const totalMin = Math.floor(diffMs / 60_000);
+/* ── Countdown helpers ────────────────────────────────────────────────── */
+function formatDiff(ms) {
+  if (ms <= 0) return '✓ Replenished';
+  const totalMin = Math.floor(ms / 60_000);
   const d = Math.floor(totalMin / 1440);
   const h = Math.floor((totalMin % 1440) / 60);
   const m = totalMin % 60;
-  const s = Math.floor((diffMs % 60_000) / 1_000);
+  const s = Math.floor((ms % 60_000) / 1_000);
   if (d > 0) return `${d}d ${h}h ${String(m).padStart(2, '0')}m`;
   if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
   return `${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
 }
 
+function parseCountdownToMs(text) {
+  if (!text || text.startsWith('✓')) return 0;
+  const dMatch = text.match(/(\d+)d\s+(\d+)h\s+(\d+)m/);
+  const hMatch = !dMatch && text.match(/(\d+)h\s+(\d+)m/);
+  const mMatch = !dMatch && !hMatch && text.match(/(\d+)m\s+(\d+)s/);
+  if (dMatch) return (parseInt(dMatch[1]) * 86400 + parseInt(dMatch[2]) * 3600 + parseInt(dMatch[3]) * 60) * 1000;
+  if (hMatch) return (parseInt(hMatch[1]) * 3600 + parseInt(hMatch[2]) * 60) * 1000;
+  if (mMatch) return (parseInt(mMatch[1]) * 60 + parseInt(mMatch[2])) * 1000;
+  return 0;
+}
+
 function tickCountdowns() {
   const now = Date.now();
   for (const [key, info] of Object.entries(countdowns)) {
-    if (!info.el || !document.contains(info.el)) {
-      delete countdowns[key];
-      continue;
-    }
+    if (!info.el || !document.contains(info.el)) { delete countdowns[key]; continue; }
     info.el.textContent = formatDiff(info.endsAt - now);
   }
 }
 
-/* ── Rendering helpers ─────────────────────────────────────────────── */
-function renderQuotaCell(catId, email, windowLabel, pool, isNA = false) {
-  const cdId = `cd-${catId}-${email.replace(/[@.]/g, '_')}-${windowLabel.toLowerCase()}`;
+/* ── DOM helpers ─────────────────────────────────────────────────────── */
+function el(id)     { return document.getElementById(id); }
+function setText(id, v) { const e = el(id); if (e) e.textContent = v; }
 
-  if (isNA) {
-    return `
-      <div class="quota-cell">
-        <div class="quota-cell-header">
-          <span class="quota-cell-window">${windowLabel}</span>
-          <span class="quota-cell-pct" style="color:var(--fg-dim)">—</span>
-        </div>
-        <div class="bar-track"><div class="bar-fill bar-na" style="width:0%"></div></div>
-        <div class="quota-cell-cd" style="color:var(--fg-dim)">Chỉ có Weekly</div>
-      </div>`;
-  }
+/* ── Aggregate Summary ────────────────────────────────────────────────── */
+function updateSummary(data) {
+  const accounts = data.accounts || [];
+  const byStatus = (s) => accounts.filter(a => a.status === s).length;
+  setText('sum-total',    accounts.length);
+  setText('sum-active',   byStatus('active'));
+  setText('sum-ready',    byStatus('ready'));
+  setText('sum-low',      byStatus('low'));
+  setText('sum-exhausted', byStatus('exhausted'));
+}
+
+/* ── Pool cell rendering ─────────────────────────────────────────────── */
+function renderPoolCell(acc, colKey, cdKey) {
+  const pool = acc.pools[colKey];
 
   if (!pool) {
-    return `
-      <div class="quota-cell">
-        <div class="quota-cell-header">
-          <span class="quota-cell-window">${windowLabel}</span>
-          <span class="quota-cell-pct" style="color:var(--fg-dim)">—</span>
-        </div>
-        <div class="bar-track"><div class="bar-fill bar-na" style="width:0%"></div></div>
-        <div class="quota-cell-cd" style="color:var(--fg-dim)">Chưa snapshot</div>
-      </div>`;
+    return `<td>
+      <div class="pool-cell">
+        <span class="pool-pct pct-na">—</span>
+        <div class="bar-track"><div class="bar-fill bar-empty" style="width:0%"></div></div>
+        <span class="pool-cd">—</span>
+      </div>
+    </td>`;
   }
 
-  const pct = pool.pct ?? 0;
-  const barClass = `bar-${pool.status || 'unknown'}`;
-  const cdText = pool.countdown || '';
+  const pct        = pool.pct ?? 0;
+  const pctClass   = pct <= 5 ? 'pct-crit' : pct <= 20 ? 'pct-warn' : '';
+  const barClass   = `bar-${pool.status || 'na'}`;
+  const cdText     = pool.countdown || '';
+  const cdId       = `cd-${cdKey}`;
 
-  return `
-    <div class="quota-cell">
-      <div class="quota-cell-header">
-        <span class="quota-cell-window">${windowLabel}</span>
-        <span class="quota-cell-pct">${pct}%</span>
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill ${barClass}" style="width:${pct}%"></div>
-      </div>
-      <div class="quota-cell-cd" id="${cdId}">${cdText}</div>
-    </div>`;
+  return `<td>
+    <div class="pool-cell">
+      <span class="pool-pct ${pctClass}">${pct}%</span>
+      <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div>
+      <span class="pool-cd" id="${cdId}">${cdText}</span>
+    </div>
+  </td>`;
 }
 
-function renderAccountRow(cat, acc) {
-  const { h5, wk } = cat.getPools(acc);
-  const isArgon = cat.id === 'argon';
+/* ── Status badge ─────────────────────────────────────────────────────── */
+const STATUS_MAP = {
+  active:   { cls: 'badge-active',   label: 'Active'   },
+  ready:    { cls: 'badge-ready',    label: 'Ready'    },
+  low:      { cls: 'badge-low',      label: 'Low'      },
+  exhausted:{ cls: 'badge-exhausted',label: 'Depleted' },
+  unknown:  { cls: 'badge-unknown',  label: 'Unknown'  },
+};
+function renderBadge(status) {
+  const s = STATUS_MAP[status] || STATUS_MAP.unknown;
+  return `<span class="status-badge ${s.cls}">${s.label}</span>`;
+}
 
-  let tagHtml = '';
-  if (acc.is_active) {
-    tagHtml = '<span class="account-tag tag-active">ACTIVE</span>';
-  } else if (acc.status === 'ready') {
-    tagHtml = '<span class="account-tag tag-ready">SẴN SÀNG</span>';
-  } else if (acc.status === 'low') {
-    tagHtml = '<span class="account-tag tag-low">CÒN ÍT</span>';
-  } else if (acc.status === 'exhausted') {
-    tagHtml = '<span class="account-tag tag-crit">ĐANG HỒI</span>';
-  }
+/* ── Table row ────────────────────────────────────────────────────────── */
+function renderRow(acc) {
+  const emailKey = acc.email.replace(/[@.]/g, '_');
+  const cells    = COLUMNS.map(col =>
+    renderPoolCell(acc, col.key, `${emailKey}-${col.key}`)
+  ).join('');
 
-  const h5Cell = renderQuotaCell(cat.id, acc.email, '5-Hour', h5, isArgon);
-  const wkCell = renderQuotaCell(cat.id, acc.email, 'Weekly', wk, false);
-
-  return `
-    <div class="account-row${acc.is_active ? ' active' : ''}">
-      <div class="account-header-row">
+  return `<tr
+    class="${acc.is_active ? 'row-active' : ''}"
+    data-email="${acc.email}"
+  >
+    <td class="td-account">
+      <div class="account-cell">
         <span class="account-email" title="${acc.email}">${acc.email}</span>
-        ${tagHtml}
+        <span class="account-plan">${acc.plan || 'Pro'}</span>
       </div>
-      <div class="quota-pair-row">
-        ${h5Cell}
-        ${wkCell}
-      </div>
-    </div>`;
+    </td>
+    ${cells}
+    <td>${renderBadge(acc.status)}</td>
+  </tr>`;
 }
 
-function renderCategoryGroup(cat, accounts) {
-  const rowsHtml = accounts.map(acc => renderAccountRow(cat, acc)).join('');
-
-  return `
-    <div class="category-group">
-      <div class="category-header">
-        <span class="category-title">${cat.icon} ${cat.title}</span>
-        <span class="category-badge">${accounts.length} accounts</span>
-      </div>
-      <div class="accounts-list">
-        ${rowsHtml || '<div style="padding:10px;color:var(--fg-dim);font-size:11px">Chưa có tài khoản</div>'}
-      </div>
-    </div>`;
-}
-
-function renderDashboard(data) {
-  // Update timestamp
-  const ts = new Date(data.updated_at);
-  document.getElementById('ts').textContent =
-    `Cập nhật: ${ts.toLocaleTimeString('vi-VN')}`;
-
-  const container = document.getElementById('cards');
-  if (!data.accounts || !data.accounts.length) {
-    container.innerHTML =
-      '<div style="color:var(--fg-dim);font-size:11px;padding:20px 0;text-align:center">Chưa có tài khoản nào trong cache.<br>Mở Antigravity và chat để ghi nhận lần đầu.</div>';
-    return;
-  }
-
-  // Render Category Groups: Gemini Models -> Argon Models -> Claude Models
-  container.className = 'category-container';
-  container.innerHTML = CATEGORIES.map(cat => renderCategoryGroup(cat, data.accounts)).join('');
-
-  // Register countdown elements for live ticking
+/* ── Countdown registration ────────────────────────────────────────────── */
+function registerCountdowns(accounts) {
   countdowns = {};
-  for (const cat of CATEGORIES) {
-    for (const acc of data.accounts) {
-      const { h5, wk } = cat.getPools(acc);
-      const pairs = [
-        { pool: h5, window: '5-hour' },
-        { pool: wk, window: 'weekly' },
-      ];
-      for (const { pool, window } of pairs) {
-        if (!pool || pool.pct >= 100 || !pool.countdown) continue;
-        if (pool.countdown.startsWith('✅')) continue;
-
-        const elId = `cd-${cat.id}-${acc.email.replace(/[@.]/g, '_')}-${window}`;
-        const el = document.getElementById(elId);
-        if (!el) continue;
-
-        // Parse countdown text to compute endsAt timestamp
-        // Formats: "4d 13h 16m", "13h 16m", "05m 30s"
-        const text = pool.countdown;
-        const dMatch = text.match(/(\d+)d\s+(\d+)h\s+(\d+)m/);
-        const hMatch = !dMatch && text.match(/(\d+)h\s+(\d+)m/);
-        const mMatch = !dMatch && !hMatch && text.match(/(\d+)m\s+(\d+)s/);
-        let totalSec = 0;
-        if (dMatch) totalSec = parseInt(dMatch[1]) * 86400 + parseInt(dMatch[2]) * 3600 + parseInt(dMatch[3]) * 60;
-        else if (hMatch) totalSec = parseInt(hMatch[1]) * 3600 + parseInt(hMatch[2]) * 60;
-        else if (mMatch) totalSec = parseInt(mMatch[1]) * 60 + parseInt(mMatch[2]);
-        if (totalSec > 0) {
-          const endsAt = new Date(Date.now() + totalSec * 1000);
-          countdowns[`${cat.id}:${acc.email}:${window}`] = { endsAt, el };
-        }
+  for (const acc of accounts) {
+    const emailKey = acc.email.replace(/[@.]/g, '_');
+    for (const col of COLUMNS) {
+      const pool = acc.pools[col.key];
+      if (!pool || pool.pct >= 100 || !pool.countdown) continue;
+      const cdId  = `cd-${emailKey}-${col.key}`;
+      const cdEl  = document.getElementById(cdId);
+      if (!cdEl) continue;
+      const ms = parseCountdownToMs(pool.countdown);
+      if (ms > 0) {
+        countdowns[cdId] = { endsAt: new Date(Date.now() + ms), el: cdEl };
       }
     }
   }
+}
 
-  // Footer switch recommendations
-  const footerEl = document.getElementById('footer');
-  const recs = data.switch_recommendations || [];
-  footerEl.innerHTML = [
-    recs.length
-      ? `<div>💡 Gợi ý Switch: <span class="recommendation">${recs.join(', ')}</span></div>`
-      : '',
-    '<div class="safe-note">🔒 An toàn 100% — chỉ đọc 127.0.0.1 của Official App</div>',
+/* ── Main render ─────────────────────────────────────────────────────── */
+function renderTable(data) {
+  const tbody = el('table-body');
+  const query = filterText.trim().toLowerCase();
+  const accounts = (data.accounts || []).filter(a =>
+    !query || a.email.toLowerCase().includes(query)
+  );
+
+  if (!accounts.length) {
+    tbody.innerHTML = `<tr class="row-loading"><td colspan="7">${
+      query ? 'No accounts match the filter.' : 'No accounts in cache yet. Open Antigravity and chat to record the first snapshot.'
+    }</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = accounts.map(renderRow).join('');
+
+  // Attach row click → drawer
+  for (const tr of tbody.querySelectorAll('tr[data-email]')) {
+    tr.addEventListener('click', () => {
+      const acc = data.accounts.find(a => a.email === tr.dataset.email);
+      if (acc) openDrawer(acc);
+    });
+  }
+
+  registerCountdowns(accounts);
+}
+
+function renderDashboard(data) {
+  // Refresh status
+  el('status-dot').className   = 'status-dot live';
+  el('status-label').textContent = `Live · ${new Date(data.updated_at).toLocaleTimeString('vi-VN')}`;
+  setText('ts', new Date(data.updated_at).toLocaleTimeString('vi-VN'));
+
+  updateSummary(data);
+  renderTable(data);
+
+  // If drawer open, refresh its data
+  if (drawerAccount) {
+    const refreshed = data.accounts.find(a => a.email === drawerAccount.email);
+    if (refreshed) { drawerAccount = refreshed; renderDrawerBody(refreshed); }
+  }
+}
+
+/* ── Drawer ──────────────────────────────────────────────────────────── */
+function openDrawer(acc) {
+  drawerAccount = acc;
+  el('drawer-title').textContent = acc.email;
+  renderDrawerBody(acc);
+  el('drawer').classList.add('open');
+  el('drawer-overlay').classList.add('open');
+  el('drawer').setAttribute('aria-hidden', 'false');
+}
+
+function closeDrawer() {
+  drawerAccount = null;
+  el('drawer').classList.remove('open');
+  el('drawer-overlay').classList.remove('open');
+  el('drawer').setAttribute('aria-hidden', 'true');
+}
+
+function renderDrawerBody(acc) {
+  const lastSeen = acc.last_seen_utc
+    ? new Date(acc.last_seen_utc).toLocaleString('vi-VN')
+    : '—';
+
+  const meta = `
+    <div>
+      <div class="dr-section-label">Account Info</div>
+      <div class="dr-meta"><span class="dr-meta-key">Plan</span><span class="dr-meta-val">${acc.plan || 'Pro'}</span></div>
+      <div class="dr-meta"><span class="dr-meta-key">Status</span>${renderBadge(acc.status)}</div>
+      <div class="dr-meta"><span class="dr-meta-key">Last seen</span><span class="dr-meta-val">${lastSeen}</span></div>
+    </div>`;
+
+  const poolRows = COLUMNS.map(col => {
+    const pool = acc.pools[col.key];
+    if (!pool) return `
+      <div class="dr-pool-row">
+        <span class="dr-pool-name">${col.label}</span>
+        <div class="dr-pool-bar">
+          <div class="dr-bar-label"><span>—</span><span>N/A</span></div>
+          <div class="bar-track"><div class="bar-fill bar-empty" style="width:0"></div></div>
+        </div>
+      </div>`;
+
+    const pct      = pool.pct ?? 0;
+    const barClass = `bar-${pool.status || 'na'}`;
+    return `
+      <div class="dr-pool-row">
+        <span class="dr-pool-name">${col.label}</span>
+        <div class="dr-pool-bar">
+          <div class="dr-bar-label">
+            <span style="color:var(--fg-2)">${pool.display_name || col.label}</span>
+            <span>${pct}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div>
+          <span class="dr-pool-cd">${pool.countdown || '—'}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  const recBanner = !acc.is_active && acc.status === 'ready'
+    ? `<div class="dr-rec-banner">💡 This account has sufficient quota and can be switched to.</div>`
+    : '';
+
+  el('drawer-body').innerHTML = [meta,
+    `<div><div class="dr-section-label">Pool Breakdown</div>${poolRows}</div>`,
+    recBanner,
   ].join('');
 }
 
-/* ── Error banner ──────────────────────────────────────────────────── */
+/* ── Error / status UI ───────────────────────────────────────────────── */
 function showError(msg) {
-  document.getElementById('error-banner').innerHTML =
-    `<div class="banner">⚠️ ${msg}</div>`;
+  el('error-banner').innerHTML = `<div class="banner">⚠ ${msg}</div>`;
+  el('status-dot').className   = 'status-dot error';
+  el('status-label').textContent = 'Error';
 }
 function clearError() {
-  document.getElementById('error-banner').innerHTML = '';
+  el('error-banner').innerHTML = '';
+}
+function setLoading() {
+  el('status-dot').className   = 'status-dot loading';
+  el('status-label').textContent = 'Refreshing…';
 }
 
-/* ── Data fetching ─────────────────────────────────────────────────── */
+/* ── Data fetch ──────────────────────────────────────────────────────── */
 async function fetchQuota() {
+  setLoading();
   try {
-    const res = await fetch(API_PATH, { cache: 'no-store' });
+    const res = await fetch(API, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     lastData = data;
     clearError();
     renderDashboard(data);
   } catch (err) {
-    showError(`Không lấy được dữ liệu (${err.message}). Đang thử lại...`);
-    if (lastData) renderDashboard(lastData);
+    showError(`Failed to fetch data (${err.message}). Retrying…`);
+    if (lastData) renderTable(lastData);
   }
 }
 
-/* ── Init ──────────────────────────────────────────────────────────── */
+/* ── Search / filter ─────────────────────────────────────────────────── */
+el('search').addEventListener('input', (e) => {
+  filterText = e.target.value;
+  if (lastData) renderTable(lastData);
+});
+
+// ⌘K / Ctrl+K focuses search
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    el('search').focus();
+    el('search').select();
+  }
+  if (e.key === 'Escape') {
+    if (el('drawer').classList.contains('open')) closeDrawer();
+    else { el('search').blur(); }
+  }
+});
+
+/* ── Drawer close handlers ───────────────────────────────────────────── */
+el('drawer-close').addEventListener('click', closeDrawer);
+el('drawer-overlay').addEventListener('click', closeDrawer);
+
+/* ── Init ────────────────────────────────────────────────────────────── */
 fetchQuota();
-setInterval(fetchQuota, POLL_INTERVAL_MS);
-setInterval(tickCountdowns, TICK_INTERVAL_MS);
+setInterval(fetchQuota, POLL_MS);
+setInterval(tickCountdowns, TICK_MS);
