@@ -97,9 +97,12 @@ function countdown(resetIso) {
   if (!resetIso) return null;
   const diff = Math.max(0, new Date(resetIso) - Date.now());
   if (diff === 0) return '✅ Đã hồi đầy';
-  const h = Math.floor(diff / 3_600_000);
-  const m = Math.floor((diff % 3_600_000) / 60_000);
-  return `hồi sau ${h}h${String(m).padStart(2,'0')}m`;
+  const totalMin = Math.floor(diff / 60_000);
+  const d = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  if (d > 0) return `${d}d ${h}h ${String(m).padStart(2, '0')}m`;
+  return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
 function formatLocalTime(isoStr) {
@@ -171,17 +174,20 @@ function buildApiResponse(snapshot, activeEmail) {
       };
     }
 
-    // Status label
+    // Status label: account is "ready" only if BOTH 5h AND weekly are healthy
     const isActive = acc.email === activeEmail;
-    const fiveHours = ['gemini_5h','gemini_flash','claude_5h','claude_gpt']
+    const fiveHourPcts = ['gemini_5h','gemini_flash','claude_5h','claude_gpt']
       .map(k => pools[k]?.pct).filter(v => v != null);
-    const minPct = fiveHours.length ? Math.min(...fiveHours) : null;
+    const weeklyPcts = ['gemini_weekly','claude_weekly']
+      .map(k => pools[k]?.pct).filter(v => v != null);
+    const min5h = fiveHourPcts.length ? Math.min(...fiveHourPcts) : null;
+    const minWk = weeklyPcts.length  ? Math.min(...weeklyPcts)  : null;
     let statusLabel;
     if (isActive) statusLabel = 'active';
-    else if (minPct === null) statusLabel = 'unknown';
-    else if (minPct >= 50) statusLabel = 'ready';
-    else if (minPct > 5)   statusLabel = 'low';
-    else                   statusLabel = 'exhausted';
+    else if (min5h === null && minWk === null) statusLabel = 'unknown';
+    else if ((min5h ?? 100) >= 50 && (minWk ?? 100) >= 10) statusLabel = 'ready';
+    else if ((min5h ?? 0) > 5) statusLabel = 'low';
+    else statusLabel = 'exhausted';
 
     return {
       email:        acc.email,

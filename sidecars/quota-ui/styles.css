@@ -1,153 +1,184 @@
 :root {
-  /* Inherit Antigravity / VS Code theme tokens */
-  --bg:          var(--vscode-editor-background, #1e1e2e);
-  --bg-card:     var(--vscode-sideBar-background, #252535);
-  --bg-card-sub: color-mix(in srgb, var(--vscode-sideBar-background, #252535) 85%, #000);
-  --fg:          var(--vscode-foreground, #cdd6f4);
-  --fg-dim:      var(--vscode-descriptionForeground, #7f849c);
-  --border:      var(--vscode-widget-border, #313244);
-  --accent:      var(--vscode-focusBorder, #89b4fa);
-  --font:        var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
-  --font-size:   var(--vscode-font-size, 12px);
+  /* VS Code token fallbacks → dark minimalist defaults */
+  --bg:        var(--vscode-editor-background, #0d0d0f);
+  --bg-card:   var(--vscode-sideBar-background, #111114);
+  --fg:        var(--vscode-foreground, #e2e2e8);
+  --fg-dim:    var(--vscode-descriptionForeground, #52525e);
+  --fg-mid:    #8888a0;
+  --border:    rgba(255, 255, 255, 0.07);
+  --border-md: rgba(255, 255, 255, 0.11);
+  --accent:    var(--vscode-focusBorder, #6b8cff);
+  --font:      var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  --font-mono: var(--vscode-editor-font-family, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace);
+  --font-size: var(--vscode-font-size, 12px);
 
-  /* Status colors */
-  --ok:          #a6e3a1;
-  --warn:        #f9e2af;
-  --crit:        #f38ba8;
-  --replenished: #a6e3a1;
-  --unknown:     #585b70;
+  /* Status palette — desaturated, legible on dark */
+  --ok:    #52c97a;
+  --warn:  #d4a843;
+  --crit:  #d45f72;
+  --na:    #333340;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: var(--bg);
-  color:      var(--fg);
+  background:  var(--bg);
+  color:       var(--fg);
   font-family: var(--font);
-  font-size:  var(--font-size);
-  padding:    10px;
-  min-height: 100vh;
+  font-size:   var(--font-size);
+  padding:     10px 10px 16px;
+  min-height:  100vh;
+  line-height: 1.4;
 }
 
-/* ── Header ──────────────────────────────────────────────────────── */
+/* ── Header ─────────────────────────────────────────────────────── */
 .header {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  margin-bottom:   10px;
-  padding-bottom:  6px;
-  border-bottom:   1px solid var(--border);
+  margin-bottom:   12px;
+  padding-bottom:  8px;
+  border-bottom:   1px solid var(--border-md);
 }
-.header h1 { font-size: 13px; font-weight: 600; letter-spacing: .02em; }
-.header .ts { font-size: 10px; color: var(--fg-dim); }
+.header h1 {
+  font-size:      11px;
+  font-weight:    600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color:          var(--fg-mid);
+}
+.header .ts {
+  font-size: 9px;
+  color:     var(--fg-dim);
+}
 
-/* ── Banner ──────────────────────────────────────────────────────── */
+/* ── Error Banner ───────────────────────────────────────────────── */
 .banner {
-  background: color-mix(in srgb, var(--crit) 15%, transparent);
-  border:     1px solid var(--crit);
-  border-radius: 6px;
-  padding:    6px 10px;
-  font-size:  11px;
-  margin-bottom: 8px;
+  background:    rgba(212, 95, 114, 0.1);
+  border:        1px solid rgba(212, 95, 114, 0.3);
+  border-radius: 4px;
+  padding:       6px 10px;
+  font-size:     10px;
+  margin-bottom: 10px;
+  color:         #e88;
 }
 
-/* ── Category Groups ─────────────────────────────────────────────── */
+/* ── Category Groups ────────────────────────────────────────────── */
 .category-container {
-  display: flex;
+  display:        flex;
   flex-direction: column;
-  gap: 12px;
+  gap:            10px;
 }
 
 .category-group {
-  background:    var(--bg-card);
   border:        1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   overflow:      hidden;
+  background:    var(--bg-card);
 }
 
 .category-header {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  padding:         8px 10px;
-  background:      color-mix(in srgb, var(--border) 40%, transparent);
+  padding:         6px 10px;
   border-bottom:   1px solid var(--border);
 }
 .category-title {
-  font-size:   12px;
-  font-weight: 600;
-  display:     flex;
-  align-items: center;
-  gap: 6px;
+  font-size:      10px;
+  font-weight:    600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color:          var(--fg-mid);
+  display:        flex;
+  align-items:    center;
+  gap:            5px;
 }
 .category-badge {
-  font-size:     10px;
+  font-size:     9px;
   color:         var(--fg-dim);
-  background:    var(--bg);
+  background:    rgba(255, 255, 255, 0.04);
   padding:       1px 6px;
-  border-radius: 10px;
+  border-radius: 20px;
+  border:        1px solid var(--border);
 }
 
-/* ── Account Rows Inside Group ───────────────────────────────────── */
+/* ── Account Rows ───────────────────────────────────────────────── */
 .accounts-list {
-  display: flex;
+  display:        flex;
   flex-direction: column;
 }
 
 .account-row {
-  padding:       8px 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
-  display:       flex;
+  padding:        7px 10px;
+  border-bottom:  1px solid var(--border);
+  display:        flex;
   flex-direction: column;
-  gap: 6px;
+  gap:            6px;
 }
-.account-row:last-child {
-  border-bottom: none;
-}
+.account-row:last-child { border-bottom: none; }
 .account-row.active {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  border-left: 3px solid var(--accent);
+  background:  rgba(107, 140, 255, 0.05);
+  border-left: 2px solid var(--accent);
+  padding-left: 8px;
 }
 
 .account-header-row {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
+  gap:             6px;
 }
 .account-email {
-  font-size:     11px;
-  font-weight:   600;
+  font-size:     10px;
+  font-weight:   500;
+  color:         var(--fg);
   overflow:      hidden;
   text-overflow: ellipsis;
   white-space:   nowrap;
-  max-width:     75%;
+  max-width:     72%;
+  font-family:   var(--font-mono);
 }
+
+/* Status dot pills — text-only, minimal */
 .account-tag {
   font-size:     9px;
-  padding:       1px 6px;
-  border-radius: 10px;
-  font-weight:   500;
+  font-weight:   600;
+  letter-spacing: .04em;
+  display:       flex;
+  align-items:   center;
+  gap:           4px;
+  white-space:   nowrap;
+  flex-shrink:   0;
 }
-.tag-active { background: #1e3a5f; color: #89b4fa; border: 1px solid #89b4fa44; }
-.tag-ready  { background: #1e3a2e; color: #a6e3a1; border: 1px solid #a6e3a144; }
-.tag-low    { background: #3a2e1e; color: #f9e2af; border: 1px solid #f9e2af44; }
-.tag-crit   { background: #3a1e1e; color: #f38ba8; border: 1px solid #f38ba844; }
+.account-tag::before {
+  content:       '●';
+  font-size:     8px;
+}
+.tag-active { color: var(--accent); }
+.tag-active::before { color: var(--accent); }
+.tag-ready  { color: var(--ok); }
+.tag-ready::before  { color: var(--ok); }
+.tag-low    { color: var(--warn); }
+.tag-low::before    { color: var(--warn); }
+.tag-crit   { color: var(--crit); }
+.tag-crit::before   { color: var(--crit); }
 
-/* ── 5h & Weekly In The Same Row ─────────────────────────────────── */
+/* ── Quota Pair Row (5h + Weekly side-by-side) ─────────────────── */
 .quota-pair-row {
-  display: grid;
+  display:               grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap:                   6px;
 }
 
 .quota-cell {
-  background:    var(--bg-card-sub);
-  border:        1px solid color-mix(in srgb, var(--border) 60%, transparent);
-  border-radius: 5px;
-  padding:       5px 7px;
-  display:       flex;
+  display:        flex;
   flex-direction: column;
-  gap: 3px;
+  gap:            4px;
+  padding:        5px 7px;
+  background:     rgba(255, 255, 255, 0.02);
+  border:         1px solid var(--border);
+  border-radius:  4px;
 }
 
 .quota-cell-header {
@@ -156,47 +187,61 @@ body {
   align-items:     baseline;
 }
 .quota-cell-window {
-  font-size:   10px;
-  font-weight: 600;
-  color:       var(--fg-dim);
+  font-size:      9px;
+  font-weight:    600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color:          var(--fg-dim);
 }
 .quota-cell-pct {
-  font-size:   11px;
+  font-size:   12px;
   font-weight: 700;
+  font-family: var(--font-mono);
+  color:       var(--fg);
 }
 
+/* Progress bar — 3px, full-width */
 .bar-track {
-  height:        4px;
-  background:    var(--border);
+  height:        3px;
+  background:    rgba(255, 255, 255, 0.06);
   border-radius: 2px;
   overflow:      hidden;
 }
 .bar-fill {
   height:        100%;
   border-radius: 2px;
-  transition:    width .5s ease;
+  transition:    width .6s ease;
 }
 .bar-ok          { background: var(--ok); }
 .bar-warning     { background: var(--warn); }
 .bar-critical    { background: var(--crit); }
-.bar-replenished { background: var(--replenished); }
-.bar-na          { background: var(--unknown); }
+.bar-replenished { background: var(--ok); }
+.bar-na          { background: var(--na); }
 
+/* Countdown label */
 .quota-cell-cd {
-  font-size:   9px;
-  color:       var(--fg-dim);
-  white-space: nowrap;
-  overflow:    hidden;
+  font-size:     9px;
+  color:         var(--fg-dim);
+  font-family:   var(--font-mono);
+  white-space:   nowrap;
+  overflow:      hidden;
   text-overflow: ellipsis;
 }
 
-/* ── Footer ──────────────────────────────────────────────────────── */
+/* ── Footer ─────────────────────────────────────────────────────── */
 .footer {
-  margin-top:  12px;
+  margin-top:  14px;
   padding-top: 8px;
   border-top:  1px solid var(--border);
-  font-size:   10px;
+  font-size:   9px;
   color:       var(--fg-dim);
+  display:     flex;
+  flex-direction: column;
+  gap:         3px;
 }
-.footer .recommendation { color: var(--ok); font-weight: 600; }
-.footer .safe-note { margin-top: 3px; opacity: .7; }
+.footer .recommendation {
+  color:       var(--ok);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.footer .safe-note { opacity: .5; }

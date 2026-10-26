@@ -40,6 +40,18 @@ let lastData   = null;
 let countdowns = {};  // key -> { endsAt: Date, el: Element }
 
 /* ── Countdown ticker ──────────────────────────────────────────────── */
+function formatDiff(diffMs) {
+  if (diffMs <= 0) return '✅ Đã hồi đầy';
+  const totalMin = Math.floor(diffMs / 60_000);
+  const d = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  const s = Math.floor((diffMs % 60_000) / 1_000);
+  if (d > 0) return `${d}d ${h}h ${String(m).padStart(2, '0')}m`;
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  return `${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+}
+
 function tickCountdowns() {
   const now = Date.now();
   for (const [key, info] of Object.entries(countdowns)) {
@@ -47,17 +59,7 @@ function tickCountdowns() {
       delete countdowns[key];
       continue;
     }
-    const diffMs = info.endsAt - now;
-    if (diffMs <= 0) {
-      info.el.textContent = '✅ Đã hồi đầy';
-    } else {
-      const h = Math.floor(diffMs / 3_600_000);
-      const m = Math.floor((diffMs % 3_600_000) / 60_000);
-      const s = Math.floor((diffMs % 60_000) / 1_000);
-      info.el.textContent = h > 0
-        ? `hồi sau ${h}h${String(m).padStart(2, '0')}m`
-        : `hồi sau ${String(m).padStart(2, '0')}m${String(s).padStart(2, '0')}s`;
-    }
+    info.el.textContent = formatDiff(info.endsAt - now);
   }
 }
 
@@ -112,13 +114,13 @@ function renderAccountRow(cat, acc) {
 
   let tagHtml = '';
   if (acc.is_active) {
-    tagHtml = '<span class="account-tag tag-active">🔵 ACTIVE</span>';
+    tagHtml = '<span class="account-tag tag-active">ACTIVE</span>';
   } else if (acc.status === 'ready') {
-    tagHtml = '<span class="account-tag tag-ready">🟢 SẴN SÀNG</span>';
+    tagHtml = '<span class="account-tag tag-ready">SẴN SÀNG</span>';
   } else if (acc.status === 'low') {
-    tagHtml = '<span class="account-tag tag-low">🟡 CÒN ÍT</span>';
+    tagHtml = '<span class="account-tag tag-low">CÒN ÍT</span>';
   } else if (acc.status === 'exhausted') {
-    tagHtml = '<span class="account-tag tag-crit">⏳ ĐANG HỒI</span>';
+    tagHtml = '<span class="account-tag tag-crit">ĐANG HỒI</span>';
   }
 
   const h5Cell = renderQuotaCell(cat.id, acc.email, '5-Hour', h5, isArgon);
@@ -127,7 +129,7 @@ function renderAccountRow(cat, acc) {
   return `
     <div class="account-row${acc.is_active ? ' active' : ''}">
       <div class="account-header-row">
-        <span class="account-email" title="${acc.email}">${acc.is_active ? '🔵 ' : ''}${acc.email}</span>
+        <span class="account-email" title="${acc.email}">${acc.email}</span>
         ${tagHtml}
       </div>
       <div class="quota-pair-row">
@@ -186,10 +188,17 @@ function renderDashboard(data) {
         const el = document.getElementById(elId);
         if (!el) continue;
 
-        // Extract hours & minutes from countdown text
-        const match = pool.countdown.match(/(\d+)h(\d+)m/);
-        if (match) {
-          const totalSec = parseInt(match[1]) * 3600 + parseInt(match[2]) * 60;
+        // Parse countdown text to compute endsAt timestamp
+        // Formats: "4d 13h 16m", "13h 16m", "05m 30s"
+        const text = pool.countdown;
+        const dMatch = text.match(/(\d+)d\s+(\d+)h\s+(\d+)m/);
+        const hMatch = !dMatch && text.match(/(\d+)h\s+(\d+)m/);
+        const mMatch = !dMatch && !hMatch && text.match(/(\d+)m\s+(\d+)s/);
+        let totalSec = 0;
+        if (dMatch) totalSec = parseInt(dMatch[1]) * 86400 + parseInt(dMatch[2]) * 3600 + parseInt(dMatch[3]) * 60;
+        else if (hMatch) totalSec = parseInt(hMatch[1]) * 3600 + parseInt(hMatch[2]) * 60;
+        else if (mMatch) totalSec = parseInt(mMatch[1]) * 60 + parseInt(mMatch[2]);
+        if (totalSec > 0) {
           const endsAt = new Date(Date.now() + totalSec * 1000);
           countdowns[`${cat.id}:${acc.email}:${window}`] = { endsAt, el };
         }
