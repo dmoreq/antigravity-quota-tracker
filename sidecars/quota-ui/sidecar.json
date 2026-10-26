@@ -1,0 +1,17 @@
+{
+  "display_name": "Quota Dashboard",
+  "description": "Multi-account Antigravity Pro quota monitor with offline replenishment countdown.",
+  "command": "/opt/homebrew/bin/node",
+  "args": ["server.cjs"],
+  "restart_policy": "always",
+  "has_web_ui": true,
+  "ui_config": {
+    "views": [
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "Quota Dashboard"
+      }
+    ]
+  }
+}

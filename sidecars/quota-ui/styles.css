@@ -1,0 +1,126 @@
+:root {
+  /* Inherit Antigravity / VS Code theme tokens */
+  --bg:          var(--vscode-editor-background, #1e1e2e);
+  --bg-card:     var(--vscode-sideBar-background, #252535);
+  --fg:          var(--vscode-foreground, #cdd6f4);
+  --fg-dim:      var(--vscode-descriptionForeground, #7f849c);
+  --border:      var(--vscode-widget-border, #313244);
+  --accent:      var(--vscode-focusBorder, #89b4fa);
+  --font:        var(--vscode-font-family, 'Segoe UI', system-ui, sans-serif);
+  --font-size:   var(--vscode-font-size, 12px);
+
+  /* Status colors */
+  --ok:          #a6e3a1;
+  --warn:        #f9e2af;
+  --crit:        #f38ba8;
+  --replenished: #a6e3a1;
+  --unknown:     #585b70;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color:      var(--fg);
+  font-family: var(--font);
+  font-size:  var(--font-size);
+  padding:    12px;
+  min-height: 100vh;
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-bottom:   12px;
+  padding-bottom:  8px;
+  border-bottom:   1px solid var(--border);
+}
+.header h1 { font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+.header .ts { font-size: 10px; color: var(--fg-dim); }
+
+/* ── Error / Loading banners ─────────────────────────────────────── */
+.banner {
+  background: color-mix(in srgb, var(--crit) 15%, transparent);
+  border:     1px solid var(--crit);
+  border-radius: 6px;
+  padding:    8px 12px;
+  font-size:  11px;
+  margin-bottom: 8px;
+}
+
+/* ── Account cards ───────────────────────────────────────────────── */
+.cards { display: flex; flex-direction: column; gap: 8px; }
+
+.card {
+  background:    var(--bg-card);
+  border:        1px solid var(--border);
+  border-radius: 8px;
+  padding:       10px 12px;
+  transition:    border-color .2s;
+}
+.card.active { border-color: var(--accent); }
+
+.card-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-bottom:   8px;
+}
+.card-email { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 65%; }
+.card-badge {
+  font-size:     10px;
+  padding:       2px 7px;
+  border-radius: 20px;
+  white-space:   nowrap;
+}
+.badge-active      { background: #1e3a5f; color: #89b4fa; border: 1px solid #89b4fa44; }
+.badge-ready       { background: #1e3a2e; color: #a6e3a1; border: 1px solid #a6e3a144; }
+.badge-low         { background: #3a2e1e; color: #f9e2af; border: 1px solid #f9e2af44; }
+.badge-exhausted   { background: #3a1e1e; color: #f38ba8; border: 1px solid #f38ba844; }
+.badge-unknown     { background: #252535; color: #585b70; border: 1px solid #585b7044; }
+
+/* ── Pool bars ───────────────────────────────────────────────────── */
+.pools { display: flex; flex-direction: column; gap: 5px; }
+
+.pool-row { display: flex; flex-direction: column; gap: 2px; }
+.pool-label-row {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     baseline;
+  font-size:       10px;
+  color:           var(--fg-dim);
+}
+.pool-label-row .pool-name  { font-size: 10px; }
+.pool-label-row .pool-right { display: flex; gap: 8px; align-items: baseline; }
+.pool-pct    { font-size: 11px; font-weight: 600; color: var(--fg); }
+.pool-cd     { font-size: 10px; color: var(--fg-dim); }
+
+.bar-track {
+  height:        5px;
+  background:    var(--border);
+  border-radius: 3px;
+  overflow:      hidden;
+}
+.bar-fill {
+  height:        100%;
+  border-radius: 3px;
+  transition:    width .6s ease, background-color .4s ease;
+}
+.bar-ok          { background: var(--ok); }
+.bar-warning     { background: var(--warn); }
+.bar-critical    { background: var(--crit); }
+.bar-replenished { background: var(--replenished); }
+.bar-unknown     { background: var(--unknown); }
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.footer {
+  margin-top:  12px;
+  padding-top: 8px;
+  border-top:  1px solid var(--border);
+  font-size:   10px;
+  color:       var(--fg-dim);
+}
+.footer .recommendation { color: var(--ok); font-weight: 600; }
+.footer .safe-note { margin-top: 4px; opacity: .6; }
