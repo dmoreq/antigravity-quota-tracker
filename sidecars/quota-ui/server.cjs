@@ -235,7 +235,20 @@ function serveStatic(res, filename) {
   const filepath = path.join(STATIC_DIR, filename);
   const ext      = path.extname(filename);
   try {
-    const content = fs.readFileSync(filepath);
+    let content = fs.readFileSync(filepath);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    // Cache-bust static assets inside HTML
+    if (filename === 'index.html') {
+      const ts = Date.now();
+      let html = content.toString('utf8');
+      html = html.replace('/styles.css', `/styles.css?t=${ts}`);
+      html = html.replace('/app.js', `/app.js?t=${ts}`);
+      content = Buffer.from(html, 'utf8');
+    }
+
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/plain' });
     res.end(content);
   } catch {
@@ -259,6 +272,9 @@ const server = http.createServer((req, res) => {
       const snapshot = loadSnapshot();
       const payload  = buildApiResponse(snapshot, activeEmail);
       const body     = JSON.stringify(payload);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(body);
     });
