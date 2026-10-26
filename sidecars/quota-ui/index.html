@@ -12,12 +12,22 @@
   <header class="topbar">
     <div class="topbar-left">
       <span class="topbar-title">Quota Dashboard</span>
-      <div class="topbar-status" id="refresh-status">
+      <div class="topbar-status">
         <span class="status-dot" id="status-dot"></span>
         <span class="status-label" id="status-label">Connecting…</span>
+        <span class="rpc-warn" id="rpc-warn" style="display:none" title="Live data unavailable — showing cached snapshot">Stale</span>
       </div>
     </div>
+    <div class="topbar-center">
+      <span id="health-pills" class="health-pills"></span>
+    </div>
     <div class="topbar-right">
+      <button class="refresh-btn" id="refresh-btn" title="Refresh now (R)" aria-label="Refresh">
+        <svg viewBox="0 0 16 16" fill="none" width="12" height="12">
+          <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M11 2l1.5 2.7L15 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
       <div class="search-wrap">
         <svg class="search-icon" viewBox="0 0 16 16" fill="none">
           <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.2"/>
@@ -31,6 +41,7 @@
           autocomplete="off"
           spellcheck="false"
         >
+        <button class="search-clear" id="search-clear" style="display:none" aria-label="Clear filter">✕</button>
       </div>
     </div>
   </header>
@@ -39,9 +50,7 @@
   <div id="error-banner"></div>
 
   <!-- ── Model Groups ─────────────────────────────────────────────── -->
-  <main class="groups-wrap" id="cards">
-    <div class="row-loading">Connecting to Antigravity…</div>
-  </main>
+  <main class="groups-wrap" id="cards"></main>
 
   <!-- ── Footer ──────────────────────────────────────────────────── -->
   <footer class="foot" id="footer">
@@ -51,7 +60,7 @@
 
   <!-- ── Drawer ──────────────────────────────────────────────────── -->
   <div class="drawer-overlay" id="drawer-overlay"></div>
-  <aside class="drawer" id="drawer" aria-hidden="true">
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-modal="true" role="dialog">
     <div class="drawer-header">
       <div class="drawer-title" id="drawer-title">Account Detail</div>
       <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>

@@ -77,15 +77,6 @@ function saveSnapshot(data) {
   } catch { /* best-effort */ }
 }
 
-function classifyPool(label = '') {
-  const l = label.toLowerCase();
-  if (['autocomplete','lite','embedding','tab'].some(k => l.includes(k))) return null;
-  if (l.includes('flash'))  return 'gemini_flash';
-  if (l.includes('gemini')) return 'gemini_pro';
-  if (['claude','sonnet','opus','gpt'].some(k => l.includes(k))) return 'claude_gpt';
-  return null;
-}
-
 function computePoolStatus(pct, resetIso) {
   if (pct >= 70) return 'ok';
   if (pct >= 15) return 'warning';
@@ -166,6 +157,7 @@ function buildApiResponse(snapshot, activeEmail) {
       const pct   = (reset && new Date(reset) <= now) ? 100 : Math.round(frac * 100);
       pools[key] = {
         pct,
+        reset_time:  reset || null,
         status:      computePoolStatus(pct, reset),
         reset_local: formatLocalTime(reset),
         countdown:   pct >= 100 ? '✅ Đã hồi đầy' : countdown(reset),
@@ -208,8 +200,9 @@ function buildApiResponse(snapshot, activeEmail) {
     .map(a => a.email);
 
   return {
-    updated_at:          new Date().toISOString(),
-    active_email:        activeEmail,
+    updated_at:             new Date().toISOString(),
+    active_email:           activeEmail,
+    rpc_ok:                 activeEmail !== null,
     accounts,
     switch_recommendations: recommendations,
   };
