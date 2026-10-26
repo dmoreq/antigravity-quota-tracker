@@ -72,30 +72,6 @@ function tickCountdowns() {
 function el(id)     { return document.getElementById(id); }
 function setText(id, v) { const e = el(id); if (e) e.textContent = v; }
 
-/* ── Aggregate Summary ────────────────────────────────────────────────── */
-function updateSummary(data) {
-  const accounts = data.accounts || [];
-  const byStatus = (s) => accounts.filter(a => a.status === s).length;
-  setText('sum-total',     accounts.length);
-  setText('sum-active',    byStatus('active'));
-  setText('sum-ready',     byStatus('ready'));
-  setText('sum-low',       byStatus('low'));
-  setText('sum-exhausted', byStatus('exhausted'));
-}
-
-/* ── Status badge ─────────────────────────────────────────────────────── */
-const STATUS_MAP = {
-  active:    { cls: 'badge-active',    label: 'Active'    },
-  ready:     { cls: 'badge-ready',     label: 'Ready'     },
-  low:       { cls: 'badge-low',       label: 'Low'       },
-  exhausted: { cls: 'badge-exhausted', label: 'Depleted'  },
-  unknown:   { cls: 'badge-unknown',   label: 'Unknown'   },
-};
-function renderBadge(status) {
-  const s = STATUS_MAP[status] || STATUS_MAP.unknown;
-  return `<span class="status-badge ${s.cls}">${s.label}</span>`;
-}
-
 /* ── Pool cell rendering ─────────────────────────────────────────────── */
 function renderPoolCell(pool, cdId, isNA = false) {
   if (isNA) {
@@ -144,16 +120,19 @@ function renderGroup(grp, accounts) {
     const td5h = renderPoolCell(p5h, cd5h, grp.id === 'argon');
     const tdwk = renderPoolCell(pwk, cdwk, false);
 
+    const planLabel = acc.is_active
+      ? '<span class="account-plan plan-active">Active</span>'
+      : `<span class="account-plan">${acc.plan || 'Pro'}</span>`;
+
     return `<tr class="${acc.is_active ? 'row-active' : ''}" data-email="${acc.email}">
       <td class="td-account">
         <div class="account-cell">
           <span class="account-email" title="${acc.email}">${acc.email}</span>
-          <span class="account-plan">${acc.plan || 'Pro'}</span>
+          ${planLabel}
         </div>
       </td>
       ${td5h}
       ${tdwk}
-      <td class="td-status">${renderBadge(acc.status)}</td>
     </tr>`;
   }).join('');
 
@@ -172,11 +151,10 @@ function renderGroup(grp, accounts) {
             <th class="th-acct">Account</th>
             <th class="th-pool">5-Hour</th>
             <th class="th-pool">Weekly</th>
-            <th class="th-status">Status</th>
           </tr>
         </thead>
         <tbody>
-          ${rows || '<tr class="row-loading"><td colspan="4">No accounts match the filter.</td></tr>'}
+          ${rows || '<tr class="row-loading"><td colspan="3">No accounts match the filter.</td></tr>'}
         </tbody>
       </table>
     </section>
@@ -213,8 +191,6 @@ function renderDashboard(data) {
   el('status-dot').className     = 'status-dot live';
   el('status-label').textContent = `Live · ${new Date(data.updated_at).toLocaleTimeString('vi-VN')}`;
   setText('ts', new Date(data.updated_at).toLocaleTimeString('vi-VN'));
-
-  updateSummary(data);
 
   const container = el('cards');
   const query = filterText.trim().toLowerCase();
@@ -273,7 +249,7 @@ function renderDrawerBody(acc) {
     <div>
       <div class="dr-section-label">Account Info</div>
       <div class="dr-meta"><span class="dr-meta-key">Plan</span><span class="dr-meta-val">${acc.plan || 'Pro'}</span></div>
-      <div class="dr-meta"><span class="dr-meta-key">Status</span>${renderBadge(acc.status)}</div>
+      <div class="dr-meta"><span class="dr-meta-key">Active</span><span class="dr-meta-val">${acc.is_active ? 'Active' : 'Offline'}</span></div>
       <div class="dr-meta"><span class="dr-meta-key">Last seen</span><span class="dr-meta-val">${lastSeen}</span></div>
     </div>`;
 

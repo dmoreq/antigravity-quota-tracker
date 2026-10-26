@@ -167,51 +167,6 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Summary Strip
-   ───────────────────────────────────────────────────────────────── */
-.summary-strip {
-  display:       flex;
-  align-items:   center;
-  gap:           0;
-  padding:       10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.summary-stat {
-  display:        flex;
-  flex-direction: column;
-  gap:            2px;
-  padding:        0 16px 0 0;
-}
-.summary-stat:first-child { padding-left: 0; }
-
-.stat-value {
-  font-family:          var(--font-mono);
-  font-size:            18px;
-  font-weight:          600;
-  font-variant-numeric: tabular-nums;
-  line-height:          1;
-  color:                var(--fg);
-}
-.stat-value.stat-warn { color: var(--c-warn); }
-.stat-value.stat-crit { color: var(--c-crit); }
-
-.stat-label {
-  font-size:      9px;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  color:          var(--fg-3);
-}
-
-.summary-divider {
-  width:      1px;
-  height:     28px;
-  background: var(--border-md);
-  margin:     0 16px 0 0;
-  flex-shrink: 0;
-}
-
-/* ─────────────────────────────────────────────────────────────────
    Model Groups Layout
    ───────────────────────────────────────────────────────────────── */
 .groups-wrap {
@@ -282,9 +237,8 @@ body {
   background:     var(--bg);
   white-space:    nowrap;
 }
-.mini-table thead th.th-acct   { width: 40%; padding-left: 12px; }
-.mini-table thead th.th-pool   { width: 23%; text-align: center; }
-.mini-table thead th.th-status { width: 14%; text-align: right; padding-right: 12px; }
+.mini-table thead th.th-acct   { width: 44%; padding-left: 12px; }
+.mini-table thead th.th-pool   { width: 28%; text-align: center; }
 
 /* Data rows */
 .mini-table tbody tr {
@@ -294,14 +248,16 @@ body {
 }
 .mini-table tbody tr:last-child { border-bottom: none; }
 .mini-table tbody tr:hover      { background: var(--bg-hover); }
-.mini-table tbody tr.row-active { background: rgba(99, 102, 241, .06); }
+.mini-table tbody tr.row-active {
+  background:  rgba(99, 102, 241, .06);
+  border-left: 2px solid var(--c-blue);
+}
 
 .mini-table tbody td {
   padding:        8px 10px;
   vertical-align: middle;
 }
 .mini-table tbody td.td-account { padding-left: 12px; }
-.mini-table tbody td.td-status  { text-align: right; padding-right: 12px; }
 
 /* Account cell */
 .account-cell { display: flex; flex-direction: column; gap: 1px; }
@@ -315,6 +271,7 @@ body {
   text-overflow: ellipsis;
 }
 .account-plan { font-size: 9px; color: var(--fg-3); }
+.account-plan.plan-active { color: var(--c-blue); font-weight: 500; }
 
 /* Pool cell */
 .pool-cell {
