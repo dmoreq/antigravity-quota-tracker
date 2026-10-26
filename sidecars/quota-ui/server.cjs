@@ -227,6 +227,8 @@ function refreshLiveData(cb) {
   });
 }
 
+const { URL } = require('url');
+
 // ── Static file serving ─────────────────────────────────────────────────────
 
 function serveStatic(res, filename) {
@@ -245,9 +247,14 @@ function serveStatic(res, filename) {
 // ── HTTP Server ─────────────────────────────────────────────────────────────
 
 const server = http.createServer((req, res) => {
+  console.log(`[quota-ui] ${req.method} ${req.url} headers:${JSON.stringify(req.headers['host']||'')}`);
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (req.method === 'GET' && req.url === '/api/quota') {
+  // Parse pathname, stripping query string (app appends ?token=...&conversationId=...)
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const pathname  = parsedUrl.pathname;
+
+  if (req.method === 'GET' && pathname === '/api/quota') {
     refreshLiveData((activeEmail) => {
       const snapshot = loadSnapshot();
       const payload  = buildApiResponse(snapshot, activeEmail);
@@ -259,8 +266,8 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'GET') {
-    const url = req.url === '/' ? '/index.html' : req.url;
-    serveStatic(res, url.replace(/^\//, ''));
+    const filename = (pathname === '/' || pathname === '') ? 'index.html' : pathname.replace(/^\//, '');
+    serveStatic(res, filename);
     return;
   }
 

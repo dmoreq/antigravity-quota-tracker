@@ -3,7 +3,9 @@
 /* ── Constants ─────────────────────────────────────────────────────── */
 const POLL_INTERVAL_MS    = 15_000;
 const TICK_INTERVAL_MS    = 1_000;
-const API_URL             = `${window.location.origin}/api/quota`;
+// Preserve query params (token, conversationId) that Antigravity appended —
+// the app proxies requests keeping those params, so we just append the path.
+const API_PATH            = '/api/quota';
 
 const POOL_LABELS = {
   gemini_5h:      'Gemini (5h)',
@@ -151,7 +153,7 @@ function clearError() {
 /* ── Data fetching ─────────────────────────────────────────────────── */
 async function fetchQuota() {
   try {
-    const res = await fetch(API_URL, { cache: 'no-store' });
+    const res = await fetch(API_PATH, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     lastData = data;
