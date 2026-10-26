@@ -5,20 +5,36 @@ const POLL_MS = 15_000;
 const TICK_MS = 1_000;
 const API     = '/api/quota';
 
+/* ── Model Groups Definition ─────────────────────────────────────────── */
+const MODEL_GROUPS = [
+  {
+    id: 'gemini',
+    title: 'Gemini Model',
+    icon: '✨',
+    get5h: (acc) => acc.pools.gemini_5h || acc.pools.gemini_flash,
+    getWk: (acc) => acc.pools.gemini_weekly || acc.pools.gemini_pro,
+  },
+  {
+    id: 'argon',
+    title: 'Argon Model',
+    icon: '⚡',
+    get5h: () => null, // Argon has no 5h bucket in Pro plan
+    getWk: (acc) => acc.pools.argon_weekly,
+  },
+  {
+    id: 'claude',
+    title: 'Claude Model',
+    icon: '🧠',
+    get5h: (acc) => acc.pools.claude_5h || acc.pools.claude_gpt,
+    getWk: (acc) => acc.pools.claude_weekly,
+  },
+];
+
 /* ── State ────────────────────────────────────────────────────────────── */
 let lastData      = null;
 let filterText    = '';
-let countdowns    = {};   // key → { endsAt: Date, el: Element }
+let countdowns    = {};   // cdId → { endsAt: Date, el: Element }
 let drawerAccount = null;
-
-/* ── Pool column definitions (order matches <thead>) ─────────────────── */
-const COLUMNS = [
-  { key: 'gemini_5h',    label: 'Gemini 5h'    },
-  { key: 'gemini_weekly',label: 'Gemini Wk'    },
-  { key: 'claude_5h',    label: 'Claude 5h'    },
-  { key: 'claude_weekly',label: 'Claude Wk'    },
-  { key: 'argon_weekly', label: 'Argon Wk'     },
-];
 
 /* ── Countdown helpers ────────────────────────────────────────────────── */
 function formatDiff(ms) {
@@ -34,7 +50,7 @@ function formatDiff(ms) {
 }
 
 function parseCountdownToMs(text) {
-  if (!text || text.startsWith('✓')) return 0;
+  if (!text || text.startsWith('✓') || text.startsWith('✅')) return 0;
   const dMatch = text.match(/(\d+)d\s+(\d+)h\s+(\d+)m/);
   const hMatch = !dMatch && text.match(/(\d+)h\s+(\d+)m/);
   const mMatch = !dMatch && !hMatch && text.match(/(\d+)m\s+(\d+)s/);
@@ -60,16 +76,37 @@ function setText(id, v) { const e = el(id); if (e) e.textContent = v; }
 function updateSummary(data) {
   const accounts = data.accounts || [];
   const byStatus = (s) => accounts.filter(a => a.status === s).length;
-  setText('sum-total',    accounts.length);
-  setText('sum-active',   byStatus('active'));
-  setText('sum-ready',    byStatus('ready'));
-  setText('sum-low',      byStatus('low'));
+  setText('sum-total',     accounts.length);
+  setText('sum-active',    byStatus('active'));
+  setText('sum-ready',     byStatus('ready'));
+  setText('sum-low',       byStatus('low'));
   setText('sum-exhausted', byStatus('exhausted'));
 }
 
+/* ── Status badge ─────────────────────────────────────────────────────── */
+const STATUS_MAP = {
+  active:    { cls: 'badge-active',    label: 'Active'    },
+  ready:     { cls: 'badge-ready',     label: 'Ready'     },
+  low:       { cls: 'badge-low',       label: 'Low'       },
+  exhausted: { cls: 'badge-exhausted', label: 'Depleted'  },
+  unknown:   { cls: 'badge-unknown',   label: 'Unknown'   },
+};
+function renderBadge(status) {
+  const s = STATUS_MAP[status] || STATUS_MAP.unknown;
+  return `<span class="status-badge ${s.cls}">${s.label}</span>`;
+}
+
 /* ── Pool cell rendering ─────────────────────────────────────────────── */
-function renderPoolCell(acc, colKey, cdKey) {
-  const pool = acc.pools[colKey];
+function renderPoolCell(pool, cdId, isNA = false) {
+  if (isNA) {
+    return `<td>
+      <div class="pool-cell">
+        <span class="pool-pct pct-na">—</span>
+        <div class="bar-track"><div class="bar-fill bar-empty" style="width:0%"></div></div>
+        <span class="pool-cd">—</span>
+      </div>
+    </td>`;
+  }
 
   if (!pool) {
     return `<td>
@@ -81,11 +118,10 @@ function renderPoolCell(acc, colKey, cdKey) {
     </td>`;
   }
 
-  const pct        = pool.pct ?? 0;
-  const pctClass   = pct <= 5 ? 'pct-crit' : pct <= 20 ? 'pct-warn' : '';
-  const barClass   = `bar-${pool.status || 'na'}`;
-  const cdText     = pool.countdown || '';
-  const cdId       = `cd-${cdKey}`;
+  const pct      = pool.pct ?? 0;
+  const pctClass = pct <= 5 ? 'pct-crit' : pct <= 20 ? 'pct-warn' : '';
+  const barClass = `bar-${pool.status || 'na'}`;
+  const cdText   = pool.countdown || '';
 
   return `<td>
     <div class="pool-cell">
@@ -96,79 +132,106 @@ function renderPoolCell(acc, colKey, cdKey) {
   </td>`;
 }
 
-/* ── Status badge ─────────────────────────────────────────────────────── */
-const STATUS_MAP = {
-  active:   { cls: 'badge-active',   label: 'Active'   },
-  ready:    { cls: 'badge-ready',    label: 'Ready'    },
-  low:      { cls: 'badge-low',      label: 'Low'      },
-  exhausted:{ cls: 'badge-exhausted',label: 'Depleted' },
-  unknown:  { cls: 'badge-unknown',  label: 'Unknown'  },
-};
-function renderBadge(status) {
-  const s = STATUS_MAP[status] || STATUS_MAP.unknown;
-  return `<span class="status-badge ${s.cls}">${s.label}</span>`;
-}
+/* ── Render Group ─────────────────────────────────────────────────────── */
+function renderGroup(grp, accounts) {
+  const rows = accounts.map(acc => {
+    const emailKey = acc.email.replace(/[@.]/g, '_');
+    const p5h = grp.get5h(acc);
+    const pwk = grp.getWk(acc);
+    const cd5h = `cd-${grp.id}-${emailKey}-5h`;
+    const cdwk = `cd-${grp.id}-${emailKey}-wk`;
 
-/* ── Table row ────────────────────────────────────────────────────────── */
-function renderRow(acc) {
-  const emailKey = acc.email.replace(/[@.]/g, '_');
-  const cells    = COLUMNS.map(col =>
-    renderPoolCell(acc, col.key, `${emailKey}-${col.key}`)
-  ).join('');
+    const td5h = renderPoolCell(p5h, cd5h, grp.id === 'argon');
+    const tdwk = renderPoolCell(pwk, cdwk, false);
 
-  return `<tr
-    class="${acc.is_active ? 'row-active' : ''}"
-    data-email="${acc.email}"
-  >
-    <td class="td-account">
-      <div class="account-cell">
-        <span class="account-email" title="${acc.email}">${acc.email}</span>
-        <span class="account-plan">${acc.plan || 'Pro'}</span>
+    return `<tr class="${acc.is_active ? 'row-active' : ''}" data-email="${acc.email}">
+      <td class="td-account">
+        <div class="account-cell">
+          <span class="account-email" title="${acc.email}">${acc.email}</span>
+          <span class="account-plan">${acc.plan || 'Pro'}</span>
+        </div>
+      </td>
+      ${td5h}
+      ${tdwk}
+      <td class="td-status">${renderBadge(acc.status)}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <section class="model-group" id="grp-${grp.id}">
+      <div class="group-header">
+        <div class="group-title">
+          <span class="group-icon">${grp.icon}</span>
+          <span>${grp.title}</span>
+        </div>
+        <span class="group-badge">${accounts.length} accounts</span>
       </div>
-    </td>
-    ${cells}
-    <td>${renderBadge(acc.status)}</td>
-  </tr>`;
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th class="th-acct">Account</th>
+            <th class="th-pool">5-Hour</th>
+            <th class="th-pool">Weekly</th>
+            <th class="th-status">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr class="row-loading"><td colspan="4">No accounts match the filter.</td></tr>'}
+        </tbody>
+      </table>
+    </section>
+  `;
 }
 
 /* ── Countdown registration ────────────────────────────────────────────── */
 function registerCountdowns(accounts) {
   countdowns = {};
-  for (const acc of accounts) {
-    const emailKey = acc.email.replace(/[@.]/g, '_');
-    for (const col of COLUMNS) {
-      const pool = acc.pools[col.key];
-      if (!pool || pool.pct >= 100 || !pool.countdown) continue;
-      const cdId  = `cd-${emailKey}-${col.key}`;
-      const cdEl  = document.getElementById(cdId);
-      if (!cdEl) continue;
-      const ms = parseCountdownToMs(pool.countdown);
-      if (ms > 0) {
-        countdowns[cdId] = { endsAt: new Date(Date.now() + ms), el: cdEl };
+  for (const grp of MODEL_GROUPS) {
+    for (const acc of accounts) {
+      const emailKey = acc.email.replace(/[@.]/g, '_');
+      const pools = [
+        { pool: grp.get5h(acc), key: '5h' },
+        { pool: grp.getWk(acc), key: 'wk' },
+      ];
+      for (const { pool, key } of pools) {
+        if (!pool || pool.pct >= 100 || !pool.countdown) continue;
+        const cdId = `cd-${grp.id}-${emailKey}-${key}`;
+        const cdEl = document.getElementById(cdId);
+        if (!cdEl) continue;
+        const ms = parseCountdownToMs(pool.countdown);
+        if (ms > 0) {
+          countdowns[cdId] = { endsAt: new Date(Date.now() + ms), el: cdEl };
+        }
       }
     }
   }
 }
 
 /* ── Main render ─────────────────────────────────────────────────────── */
-function renderTable(data) {
-  const tbody = el('table-body');
+function renderDashboard(data) {
+  // Refresh status
+  el('status-dot').className     = 'status-dot live';
+  el('status-label').textContent = `Live · ${new Date(data.updated_at).toLocaleTimeString('vi-VN')}`;
+  setText('ts', new Date(data.updated_at).toLocaleTimeString('vi-VN'));
+
+  updateSummary(data);
+
+  const container = el('cards');
   const query = filterText.trim().toLowerCase();
   const accounts = (data.accounts || []).filter(a =>
     !query || a.email.toLowerCase().includes(query)
   );
 
-  if (!accounts.length) {
-    tbody.innerHTML = `<tr class="row-loading"><td colspan="7">${
-      query ? 'No accounts match the filter.' : 'No accounts in cache yet. Open Antigravity and chat to record the first snapshot.'
-    }</td></tr>`;
+  if (!data.accounts || !data.accounts.length) {
+    container.innerHTML = `<div class="row-loading">No accounts in cache yet. Open Antigravity and chat to record the first snapshot.</div>`;
     return;
   }
 
-  tbody.innerHTML = accounts.map(renderRow).join('');
+  // Render 3 Model Groups in order: Gemini Model -> Argon Model -> Claude Model
+  container.innerHTML = MODEL_GROUPS.map(grp => renderGroup(grp, accounts)).join('');
 
   // Attach row click → drawer
-  for (const tr of tbody.querySelectorAll('tr[data-email]')) {
+  for (const tr of container.querySelectorAll('tr[data-email]')) {
     tr.addEventListener('click', () => {
       const acc = data.accounts.find(a => a.email === tr.dataset.email);
       if (acc) openDrawer(acc);
@@ -176,18 +239,8 @@ function renderTable(data) {
   }
 
   registerCountdowns(accounts);
-}
 
-function renderDashboard(data) {
-  // Refresh status
-  el('status-dot').className   = 'status-dot live';
-  el('status-label').textContent = `Live · ${new Date(data.updated_at).toLocaleTimeString('vi-VN')}`;
-  setText('ts', new Date(data.updated_at).toLocaleTimeString('vi-VN'));
-
-  updateSummary(data);
-  renderTable(data);
-
-  // If drawer open, refresh its data
+  // If drawer is open, refresh its data
   if (drawerAccount) {
     const refreshed = data.accounts.find(a => a.email === drawerAccount.email);
     if (refreshed) { drawerAccount = refreshed; renderDrawerBody(refreshed); }
@@ -224,7 +277,15 @@ function renderDrawerBody(acc) {
       <div class="dr-meta"><span class="dr-meta-key">Last seen</span><span class="dr-meta-val">${lastSeen}</span></div>
     </div>`;
 
-  const poolRows = COLUMNS.map(col => {
+  const drawerColumns = [
+    { key: 'gemini_5h',     label: 'Gemini 5-Hour' },
+    { key: 'gemini_weekly', label: 'Gemini Weekly' },
+    { key: 'argon_weekly',  label: 'Argon Weekly'  },
+    { key: 'claude_5h',     label: 'Claude 5-Hour' },
+    { key: 'claude_weekly', label: 'Claude Weekly' },
+  ];
+
+  const poolRows = drawerColumns.map(col => {
     const pool = acc.pools[col.key];
     if (!pool) return `
       <div class="dr-pool-row">
@@ -255,7 +316,8 @@ function renderDrawerBody(acc) {
     ? `<div class="dr-rec-banner">💡 This account has sufficient quota and can be switched to.</div>`
     : '';
 
-  el('drawer-body').innerHTML = [meta,
+  el('drawer-body').innerHTML = [
+    meta,
     `<div><div class="dr-section-label">Pool Breakdown</div>${poolRows}</div>`,
     recBanner,
   ].join('');
@@ -287,14 +349,14 @@ async function fetchQuota() {
     renderDashboard(data);
   } catch (err) {
     showError(`Failed to fetch data (${err.message}). Retrying…`);
-    if (lastData) renderTable(lastData);
+    if (lastData) renderDashboard(lastData);
   }
 }
 
 /* ── Search / filter ─────────────────────────────────────────────────── */
 el('search').addEventListener('input', (e) => {
   filterText = e.target.value;
-  if (lastData) renderTable(lastData);
+  if (lastData) renderDashboard(lastData);
 });
 
 // ⌘K / Ctrl+K focuses search

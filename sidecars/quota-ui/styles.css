@@ -212,78 +212,99 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Main Table
+   Model Groups Layout
    ───────────────────────────────────────────────────────────────── */
-.table-wrap {
-  flex:       1;
-  overflow-x: auto;
-  padding:    0 0 16px;
+.groups-wrap {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+  padding:        12px 14px 20px;
+  overflow-y:     auto;
 }
 
-.quota-table {
+/* Group section */
+.model-group {
+  display:        flex;
+  flex-direction: column;
+  background:     var(--bg-2);
+  border:         1px solid var(--border);
+  border-radius:  var(--r-2);
+  overflow:       hidden;
+}
+
+.group-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         8px 12px;
+  background:      rgba(255, 255, 255, 0.02);
+  border-bottom:   1px solid var(--border);
+}
+
+.group-title {
+  font-size:      11px;
+  font-weight:    600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color:          var(--fg);
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+}
+.group-icon { font-size: 12px; }
+
+.group-badge {
+  font-size:     9px;
+  color:         var(--fg-3);
+  background:    rgba(255, 255, 255, .04);
+  border:        1px solid var(--border);
+  padding:       1px 7px;
+  border-radius: 20px;
+}
+
+/* Mini-table per group */
+.mini-table {
   width:           100%;
   border-collapse: collapse;
   table-layout:    fixed;
 }
 
-/* Column widths */
-.col-account { width: 30%; }
-.col-pool    { width: 11%; }
-.col-status  { width: 10%; }
-.col-sub     { /* inherits from col-pool */ }
-
-/* Header rows */
-.quota-table thead th {
-  padding:        8px 10px 4px;
+.mini-table thead th {
+  padding:        6px 10px;
   text-align:     left;
   font-size:      9px;
   font-weight:    600;
-  letter-spacing: .07em;
+  letter-spacing: .06em;
   text-transform: uppercase;
   color:          var(--fg-3);
   border-bottom:  1px solid var(--border);
+  background:     var(--bg);
   white-space:    nowrap;
 }
-.quota-table thead th.col-pool {
-  text-align: center;
-}
-
-.quota-table .subheader th {
-  padding:       3px 10px 6px;
-  font-size:     9px;
-  font-weight:   500;
-  color:         var(--fg-3);
-  text-transform: none;
-  letter-spacing: 0;
-  border-bottom: 1px solid var(--border-md);
-  text-align:    center;
-}
-.quota-table .subheader th:first-child,
-.quota-table .subheader th:last-child { border-bottom-color: transparent; }
+.mini-table thead th.th-acct   { width: 40%; padding-left: 12px; }
+.mini-table thead th.th-pool   { width: 23%; text-align: center; }
+.mini-table thead th.th-status { width: 14%; text-align: right; padding-right: 12px; }
 
 /* Data rows */
-.quota-table tbody tr {
+.mini-table tbody tr {
   border-bottom: 1px solid var(--border);
   cursor:        pointer;
   transition:    background .12s;
 }
-.quota-table tbody tr:last-child { border-bottom: none; }
-.quota-table tbody tr:hover { background: var(--bg-hover); }
-.quota-table tbody tr.row-active { background: rgba(99, 102, 241, .04); }
+.mini-table tbody tr:last-child { border-bottom: none; }
+.mini-table tbody tr:hover      { background: var(--bg-hover); }
+.mini-table tbody tr.row-active { background: rgba(99, 102, 241, .06); }
 
-.quota-table tbody td {
-  padding:    10px 10px;
+.mini-table tbody td {
+  padding:        8px 10px;
   vertical-align: middle;
 }
+.mini-table tbody td.td-account { padding-left: 12px; }
+.mini-table tbody td.td-status  { text-align: right; padding-right: 12px; }
 
-/* ── Account Cell ── */
-.quota-table .col-account td,
-td.td-account {
-  padding-left: 14px;
-}
-
-.account-cell { display: flex; flex-direction: column; gap: 2px; }
-
+/* Account cell */
+.account-cell { display: flex; flex-direction: column; gap: 1px; }
 .account-email {
   font-family:   var(--font-mono);
   font-size:     10px;
@@ -293,22 +314,18 @@ td.td-account {
   overflow:      hidden;
   text-overflow: ellipsis;
 }
-.account-plan {
-  font-size:  9px;
-  color:      var(--fg-3);
-}
+.account-plan { font-size: 9px; color: var(--fg-3); }
 
-/* ── Pool Cell ── */
+/* Pool cell */
 .pool-cell {
   display:        flex;
   flex-direction: column;
-  gap:            4px;
+  gap:            3px;
   align-items:    center;
 }
-
 .pool-pct {
   font-family:          var(--font-mono);
-  font-size:            12px;
+  font-size:            11px;
   font-weight:          600;
   font-variant-numeric: tabular-nums;
   color:                var(--fg);
@@ -339,24 +356,24 @@ td.td-account {
 .bar-empty       { background: var(--c-muted); width: 0 !important; }
 
 .pool-cd {
-  font-family: var(--font-mono);
-  font-size:   8px;
-  color:       var(--fg-3);
-  white-space: nowrap;
-  overflow:    hidden;
+  font-family:   var(--font-mono);
+  font-size:     8px;
+  color:         var(--fg-3);
+  white-space:   nowrap;
+  overflow:      hidden;
   text-overflow: ellipsis;
-  max-width:   100%;
-  text-align:  center;
+  max-width:     100%;
+  text-align:    center;
 }
 
-/* ── Status Cell ── */
+/* Status badge */
 .status-badge {
-  display:        inline-flex;
-  align-items:    center;
-  gap:            5px;
-  font-size:      10px;
-  font-weight:    500;
-  white-space:    nowrap;
+  display:     inline-flex;
+  align-items: center;
+  gap:         5px;
+  font-size:   10px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 .status-badge::before {
   content:       '';
@@ -366,23 +383,30 @@ td.td-account {
   border-radius: 50%;
   flex-shrink:   0;
 }
-.badge-active   { color: var(--c-blue); }
-.badge-active::before   { background: var(--c-blue); }
-.badge-ready    { color: var(--c-ok); }
-.badge-ready::before    { background: var(--c-ok); }
-.badge-low      { color: var(--c-warn); }
-.badge-low::before      { background: var(--c-warn); }
+.badge-active    { color: var(--c-blue); }
+.badge-active::before    { background: var(--c-blue); }
+.badge-ready     { color: var(--c-ok); }
+.badge-ready::before     { background: var(--c-ok); }
+.badge-low       { color: var(--c-warn); }
+.badge-low::before       { background: var(--c-warn); }
 .badge-exhausted { color: var(--c-crit); }
 .badge-exhausted::before { background: var(--c-crit); }
-.badge-unknown  { color: var(--fg-3); }
-.badge-unknown::before  { background: var(--fg-3); }
+.badge-unknown   { color: var(--fg-3); }
+.badge-unknown::before   { background: var(--fg-3); }
 
 /* Loading / empty states */
-.row-loading td {
+.row-loading {
   text-align: center;
   color:      var(--fg-3);
   font-size:  11px;
   padding:    32px 14px;
+  cursor:     default;
+}
+.mini-table .row-loading td {
+  text-align: center;
+  color:      var(--fg-3);
+  font-size:  11px;
+  padding:    20px 14px;
   cursor:     default;
 }
 
