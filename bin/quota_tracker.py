@@ -199,12 +199,12 @@ def format_pool_cell(pool: Optional[Dict[str, Any]], now_utc: dt.datetime) -> Tu
     return f"{icon} {pct:>3}%", raw_frac
 
 
-def render_dashboard(store: Dict[str, Any], active_email: Optional[str]) -> None:
+def render_dashboard(store: Dict[str, Any], active_email: Optional[str], full: bool = False) -> None:
     now_utc = dt.datetime.now(dt.timezone.utc)
     now_str = now_utc.astimezone().strftime("%Y-%m-%d %H:%M:%S")
     accounts = store.get("accounts", {})
 
-    width = 112
+    width = 112 if not full else 140
     print("=" * width)
     print(f" 📊 BẢNG THEO DÕI QUOTA ANTIGRAVITY PRO (100% LOCAL CACHE) | {now_str}")
     print("=" * width)
@@ -220,12 +220,20 @@ def render_dashboard(store: Dict[str, Any], active_email: Optional[str]) -> None
         print("=" * width)
         return
 
-    header = (
-        f" {'Tài khoản (Email)':<28} | {'Trạng thái':<14} | "
-        f"{'Gemini 5h':<28} | {'Claude / GPT 5h':<28}"
-    )
-    print(header)
-    print("-" * width)
+    if not full:
+        header = (
+            f" {'Tài khoản (Email)':<28} | {'Trạng thái':<14} | "
+            f"{'Gemini 5h':<28} | {'Claude / GPT 5h':<28}"
+        )
+        print(header)
+        print("-" * width)
+    else:
+        header = (
+            f" {'Tài khoản (Email)':<24} | {'Gemini 5h':<22} | "
+            f"{'Claude 5h':<22} | {'Gemini Wk':<20} | {'Claude Wk':<20} | {'Argon Wk':<20}"
+        )
+        print(header)
+        print("-" * width)
 
     switch_recommendations: List[str] = []
 
@@ -235,25 +243,39 @@ def render_dashboard(store: Dict[str, Any], active_email: Optional[str]) -> None
 
         gem_5h = pools.get("gemini_5h") or pools.get("gemini_pro")
         claude_5h = pools.get("claude_5h") or pools.get("claude_gpt")
+        gem_wk = pools.get("gemini_weekly")
+        claude_wk = pools.get("claude_weekly")
+        argon_wk = pools.get("argon_weekly")
 
         gem_str, gem_frac = format_pool_cell(gem_5h, now_utc)
         claude_str, claude_frac = format_pool_cell(claude_5h, now_utc)
 
-        if is_active:
-            status = "🔵 ACTIVE"
-        else:
-            avail = [f for f in (gem_frac, claude_frac) if f >= 0.0]
-            min_frac = min(avail) if avail else 1.0
-            if min_frac >= 0.5:
-                status = "🟢 SẴN SÀNG"
-                switch_recommendations.append(email)
-            elif min_frac > 0.05:
-                status = "🟡 CÒN ÍT"
+        if not full:
+            if is_active:
+                status = "🔵 ACTIVE"
             else:
-                status = "⏳ ĐANG HỒI"
+                avail = [f for f in (gem_frac, claude_frac) if f >= 0.0]
+                min_frac = min(avail) if avail else 1.0
+                if min_frac >= 0.5:
+                    status = "🟢 SẴN SÀNG"
+                    switch_recommendations.append(email)
+                elif min_frac > 0.05:
+                    status = "🟡 CÒN ÍT"
+                else:
+                    status = "⏳ ĐANG HỒI"
 
-        short_email = email if len(email) <= 28 else email[:25] + "..."
-        print(f" {short_email:<28} | {status:<14} | {gem_str:<28} | {claude_str:<28}")
+            short_email = email if len(email) <= 28 else email[:25] + "..."
+            print(f" {short_email:<28} | {status:<14} | {gem_str:<28} | {claude_str:<28}")
+        else:
+            tag = "🔵 " if is_active else "   "
+            short_email = (tag + email) if len(tag + email) <= 24 else (tag + email)[:21] + "..."
+            gem_wk_str, _ = format_pool_cell(gem_wk, now_utc)
+            claude_wk_str, _ = format_pool_cell(claude_wk, now_utc)
+            argon_wk_str, _ = format_pool_cell(argon_wk, now_utc)
+            print(
+                f" {short_email:<24} | {gem_str:<22} | {claude_str:<22} | "
+                f"{gem_wk_str:<20} | {claude_wk_str:<20} | {argon_wk_str:<20}"
+            )
 
     print("-" * width)
     if switch_recommendations:
@@ -262,8 +284,10 @@ def render_dashboard(store: Dict[str, Any], active_email: Optional[str]) -> None
     print("=" * width)
 
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Antigravity Multi-Account Quota Tracker.")
+    parser.add_argument("--full", "-f", action="store_true", help="Hiển thị chi tiết toàn bộ các bể: Gemini 5h, Claude 5h, Gemini Weekly, Claude Weekly, Argon Weekly.")
     parser.add_argument("--watch", nargs="?", const=15, type=int, metavar="SEC", help="Tự động làm mới bảng mỗi SEC giây (mặc định 15s).")
     parser.add_argument("--json", action="store_true", help="Xuất toàn bộ dữ liệu cache dạng JSON.")
     parser.add_argument("--set", metavar="EMAIL", help="Thêm hoặc cập nhật thủ công một tài khoản vào cache.")
@@ -324,14 +348,14 @@ def main() -> None:
                     active_email = live_snap["email"]
                     store.setdefault("accounts", {})[active_email] = live_snap
                     save_snapshots(store)
-                render_dashboard(store, active_email)
+                render_dashboard(store, active_email, full=args.full)
                 print(f" ⏱️ Đang tự động cập nhật mỗi {interval}s (Ctrl+C để thoát)...")
                 time.sleep(interval)
         except KeyboardInterrupt:
             print("\nĐã dừng chế độ theo dõi.")
             return
 
-    render_dashboard(store, active_email)
+    render_dashboard(store, active_email, full=args.full)
 
 
 if __name__ == "__main__":
