@@ -2,11 +2,12 @@
   /* Inherit Antigravity / VS Code theme tokens */
   --bg:          var(--vscode-editor-background, #1e1e2e);
   --bg-card:     var(--vscode-sideBar-background, #252535);
+  --bg-card-sub: color-mix(in srgb, var(--vscode-sideBar-background, #252535) 85%, #000);
   --fg:          var(--vscode-foreground, #cdd6f4);
   --fg-dim:      var(--vscode-descriptionForeground, #7f849c);
   --border:      var(--vscode-widget-border, #313244);
   --accent:      var(--vscode-focusBorder, #89b4fa);
-  --font:        var(--vscode-font-family, 'Segoe UI', system-ui, sans-serif);
+  --font:        var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
   --font-size:   var(--vscode-font-size, 12px);
 
   /* Status colors */
@@ -24,7 +25,7 @@ body {
   color:      var(--fg);
   font-family: var(--font);
   font-size:  var(--font-size);
-  padding:    12px;
+  padding:    10px;
   min-height: 100vh;
 }
 
@@ -33,86 +34,161 @@ body {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  margin-bottom:   12px;
-  padding-bottom:  8px;
+  margin-bottom:   10px;
+  padding-bottom:  6px;
   border-bottom:   1px solid var(--border);
 }
 .header h1 { font-size: 13px; font-weight: 600; letter-spacing: .02em; }
 .header .ts { font-size: 10px; color: var(--fg-dim); }
 
-/* ── Error / Loading banners ─────────────────────────────────────── */
+/* ── Banner ──────────────────────────────────────────────────────── */
 .banner {
   background: color-mix(in srgb, var(--crit) 15%, transparent);
   border:     1px solid var(--crit);
   border-radius: 6px;
-  padding:    8px 12px;
+  padding:    6px 10px;
   font-size:  11px;
   margin-bottom: 8px;
 }
 
-/* ── Account cards ───────────────────────────────────────────────── */
-.cards { display: flex; flex-direction: column; gap: 8px; }
+/* ── Category Groups ─────────────────────────────────────────────── */
+.category-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-.card {
+.category-group {
   background:    var(--bg-card);
   border:        1px solid var(--border);
   border-radius: 8px;
-  padding:       10px 12px;
-  transition:    border-color .2s;
+  overflow:      hidden;
 }
-.card.active { border-color: var(--accent); }
 
-.card-header {
+.category-header {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  margin-bottom:   8px;
+  padding:         8px 10px;
+  background:      color-mix(in srgb, var(--border) 40%, transparent);
+  border-bottom:   1px solid var(--border);
 }
-.card-email { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 65%; }
-.card-badge {
+.category-title {
+  font-size:   12px;
+  font-weight: 600;
+  display:     flex;
+  align-items: center;
+  gap: 6px;
+}
+.category-badge {
   font-size:     10px;
-  padding:       2px 7px;
-  border-radius: 20px;
-  white-space:   nowrap;
+  color:         var(--fg-dim);
+  background:    var(--bg);
+  padding:       1px 6px;
+  border-radius: 10px;
 }
-.badge-active      { background: #1e3a5f; color: #89b4fa; border: 1px solid #89b4fa44; }
-.badge-ready       { background: #1e3a2e; color: #a6e3a1; border: 1px solid #a6e3a144; }
-.badge-low         { background: #3a2e1e; color: #f9e2af; border: 1px solid #f9e2af44; }
-.badge-exhausted   { background: #3a1e1e; color: #f38ba8; border: 1px solid #f38ba844; }
-.badge-unknown     { background: #252535; color: #585b70; border: 1px solid #585b7044; }
 
-/* ── Pool bars ───────────────────────────────────────────────────── */
-.pools { display: flex; flex-direction: column; gap: 5px; }
+/* ── Account Rows Inside Group ───────────────────────────────────── */
+.accounts-list {
+  display: flex;
+  flex-direction: column;
+}
 
-.pool-row { display: flex; flex-direction: column; gap: 2px; }
-.pool-label-row {
+.account-row {
+  padding:       8px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+  display:       flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.account-row:last-child {
+  border-bottom: none;
+}
+.account-row.active {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-left: 3px solid var(--accent);
+}
+
+.account-header-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+}
+.account-email {
+  font-size:     11px;
+  font-weight:   600;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  max-width:     75%;
+}
+.account-tag {
+  font-size:     9px;
+  padding:       1px 6px;
+  border-radius: 10px;
+  font-weight:   500;
+}
+.tag-active { background: #1e3a5f; color: #89b4fa; border: 1px solid #89b4fa44; }
+.tag-ready  { background: #1e3a2e; color: #a6e3a1; border: 1px solid #a6e3a144; }
+.tag-low    { background: #3a2e1e; color: #f9e2af; border: 1px solid #f9e2af44; }
+.tag-crit   { background: #3a1e1e; color: #f38ba8; border: 1px solid #f38ba844; }
+
+/* ── 5h & Weekly In The Same Row ─────────────────────────────────── */
+.quota-pair-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.quota-cell {
+  background:    var(--bg-card-sub);
+  border:        1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 5px;
+  padding:       5px 7px;
+  display:       flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.quota-cell-header {
   display:         flex;
   justify-content: space-between;
   align-items:     baseline;
-  font-size:       10px;
-  color:           var(--fg-dim);
 }
-.pool-label-row .pool-name  { font-size: 10px; }
-.pool-label-row .pool-right { display: flex; gap: 8px; align-items: baseline; }
-.pool-pct    { font-size: 11px; font-weight: 600; color: var(--fg); }
-.pool-cd     { font-size: 10px; color: var(--fg-dim); }
+.quota-cell-window {
+  font-size:   10px;
+  font-weight: 600;
+  color:       var(--fg-dim);
+}
+.quota-cell-pct {
+  font-size:   11px;
+  font-weight: 700;
+}
 
 .bar-track {
-  height:        5px;
+  height:        4px;
   background:    var(--border);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow:      hidden;
 }
 .bar-fill {
   height:        100%;
-  border-radius: 3px;
-  transition:    width .6s ease, background-color .4s ease;
+  border-radius: 2px;
+  transition:    width .5s ease;
 }
 .bar-ok          { background: var(--ok); }
 .bar-warning     { background: var(--warn); }
 .bar-critical    { background: var(--crit); }
 .bar-replenished { background: var(--replenished); }
-.bar-unknown     { background: var(--unknown); }
+.bar-na          { background: var(--unknown); }
+
+.quota-cell-cd {
+  font-size:   9px;
+  color:       var(--fg-dim);
+  white-space: nowrap;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+}
 
 /* ── Footer ──────────────────────────────────────────────────────── */
 .footer {
@@ -123,4 +199,4 @@ body {
   color:       var(--fg-dim);
 }
 .footer .recommendation { color: var(--ok); font-weight: 600; }
-.footer .safe-note { margin-top: 4px; opacity: .6; }
+.footer .safe-note { margin-top: 3px; opacity: .7; }
