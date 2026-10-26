@@ -1,0 +1,17 @@
+{
+  "quota-cache-hook": {
+    "enabled": true,
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 ./hooks/record_snapshot.py"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 ./hooks/record_snapshot.py"
+      }
+    ]
+  }
+}
