@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,62 +8,70 @@
 </head>
 <body>
 
-  <!-- ── Top Bar ─────────────────────────────────────────────────── -->
+  <!-- ── Top Bar: Title, Status, Search & Refresh ───────────────────── -->
   <header class="topbar">
     <div class="topbar-left">
-      <span class="topbar-title">Quota Dashboard</span>
-      <div class="topbar-status">
-        <span class="status-dot" id="status-dot"></span>
-        <span class="status-label" id="status-label">Connecting…</span>
-        <span class="rpc-warn" id="rpc-warn" style="display:none" title="Live data unavailable — showing cached snapshot">Stale</span>
+      <span class="topbar-title">Quota</span>
+      <div class="status-wrap">
+        <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+        <span class="status-text" id="status-label">Connecting…</span>
+        <span class="rpc-badge" id="rpc-warn" style="display:none">Cached</span>
       </div>
     </div>
-    <div class="topbar-center">
-      <span id="health-pills" class="health-pills"></span>
-    </div>
     <div class="topbar-right">
-      <button class="refresh-btn" id="refresh-btn" title="Refresh now (R)" aria-label="Refresh">
-        <svg viewBox="0 0 16 16" fill="none" width="12" height="12">
-          <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          <path d="M11 2l1.5 2.7L15 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
       <div class="search-wrap">
-        <svg class="search-icon" viewBox="0 0 16 16" fill="none">
-          <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <svg class="search-glyph" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="4"/>
+          <path d="M9.5 9.5l3.5 3.5" stroke-linecap="round"/>
         </svg>
         <input
           id="search"
           class="search-input"
           type="text"
-          placeholder="Filter accounts… (⌘K)"
+          placeholder="Filter (⌘K)"
           autocomplete="off"
           spellcheck="false"
+          aria-label="Filter accounts"
         >
-        <button class="search-clear" id="search-clear" style="display:none" aria-label="Clear filter">✕</button>
+        <button id="search-clear" class="btn-clear" style="display:none" aria-label="Clear filter">✕</button>
       </div>
+      <button id="refresh-btn" class="btn-icon" title="Refresh (R)" aria-label="Refresh data">
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+          <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2" stroke-linecap="round"/>
+          <path d="M11 2l1.5 2.7L15 3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
   </header>
 
-  <!-- ── Error Banner ─────────────────────────────────────────────── -->
+  <!-- ── Sub Bar: Model Filters & Health Summary ─────────────────────── -->
+  <nav class="subbar" aria-label="Model switcher and quota summary">
+    <div class="model-tabs" role="group" aria-label="Filter models" id="model-tabs">
+      <button class="tab-btn active" type="button" aria-pressed="true" data-model="gemini">Gemini</button>
+      <button class="tab-btn active" type="button" aria-pressed="true" data-model="argon">Argon</button>
+      <button class="tab-btn" type="button" aria-pressed="false" data-model="claude">Claude</button>
+    </div>
+    <div class="health-summary" id="health-pills" aria-live="polite"></div>
+  </nav>
+
+  <!-- ── Error / Alert Banner ───────────────────────────────────────── -->
   <div id="error-banner"></div>
 
-  <!-- ── Model Groups ─────────────────────────────────────────────── -->
-  <main class="groups-wrap" id="cards"></main>
+  <!-- ── Main Canvas (Borderless Open Layout) ───────────────────────── -->
+  <main class="main-canvas" id="cards" role="tabpanel" tabindex="-1" aria-label="Quota accounts"></main>
 
-  <!-- ── Footer ──────────────────────────────────────────────────── -->
+  <!-- ── Footer ────────────────────────────────────────────────────── -->
   <footer class="foot" id="footer">
-    <span class="foot-safe">🔒 Read-only · 127.0.0.1 · Official App RPC</span>
+    <span class="foot-safe">127.0.0.1 · Read-only RPC</span>
     <span class="foot-ts" id="ts"></span>
   </footer>
 
-  <!-- ── Drawer ──────────────────────────────────────────────────── -->
-  <div class="drawer-overlay" id="drawer-overlay"></div>
-  <aside class="drawer" id="drawer" aria-hidden="true" aria-modal="true" role="dialog">
+  <!-- ── Drawer Detail ─────────────────────────────────────────────── -->
+  <div class="drawer-overlay" id="drawer-overlay" tabindex="-1"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-modal="true" role="dialog" aria-labelledby="drawer-title">
     <div class="drawer-header">
-      <div class="drawer-title" id="drawer-title">Account Detail</div>
-      <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
+      <h2 class="drawer-title" id="drawer-title">Account Detail</h2>
+      <button class="drawer-close" id="drawer-close" aria-label="Close detail">✕</button>
     </div>
     <div class="drawer-body" id="drawer-body"></div>
   </aside>

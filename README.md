@@ -1,90 +1,183 @@
-# Antigravity Quota Cache & Multi-Account Tracker Plugin
+# Antigravity Quota Tracker & Multi-Account Cache
 
-Một plugin chính thức theo kiến trúc Antigravity Customization System (hỗ trợ Antigravity 2.0 và CLI), giúp tự động lưu cache thông tin hạn mức (Quota) của nhiều tài khoản khi bạn chuyển đổi qua lại giữa các account trên Official Antigravity Desktop App.
+[![CI](https://github.com/dmoreq/antigravity-quota-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/dmoreq/antigravity-quota-tracker/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Antigravity](https://img.shields.io/badge/Antigravity-2.0+-purple.svg)](https://antigravity.google)
 
----
+> **English** | [Tiếng Việt](README.vi.md)
 
-## 🌟 Tính năng nổi bật
-
-1. **Giao diện Auxiliary Side Pane trực quan**:
-   - Tích hợp trực tiếp vào thanh bên (Aux Pane) của Antigravity Desktop qua giao thức `sidecar://quota-cache/quota-ui/`.
-   - **Nhóm theo Model Category**:
-     - ✨ **Gemini Models** (Gemini Pro / Flash)
-     - ⚡ **Argon Models** (Gemini 4 Argon)
-     - 🧠 **Claude Models** (Claude Opus, Sonnet, GPT-OSS)
-   - **Hiển thị song song**: Trong mỗi model group, từng tài khoản hiển thị cả cột **5-Hour Limit** và **Weekly Limit** trên cùng một hàng.
-   - **Live Countdown Ticker**: Bộ đếm ngược thời gian hồi (ETA) nhảy mượt mà từng giây theo giờ địa phương mà không cần reload trang.
-   - **Tự động làm mới**: Tự động poll dữ liệu ngầm mỗi 15 giây.
-
-2. **Tự động Snapshot qua Lifecycle Hooks (`hooks.json`)**:
-   - Tự động chạy mỗi khi bạn mở phiên chat (`SessionStart`) hoặc khi agent kết thúc lượt trả lời (`Stop`).
-   - Kết nối trực tiếp qua RPC nội bộ `127.0.0.1` của Official Desktop App (`GetUserStatus` & `RetrieveUserQuotaSummary`).
-   - Tự động lưu và cập nhật tài khoản đang active vào file snapshot `~/.antigravity_quota_snapshots.json`.
-
-3. **Tính toán giờ hồi ngoại tuyến (Offline Replenishment Countdown)**:
-   - Khi bạn chuyển sang tài khoản khác, tài khoản cũ vẫn được lưu trong cache.
-   - Tự động chuyển trạng thái thành `🟢 100% (Đã hồi đầy)` ngay khi vượt qua mốc giờ reset mà không cần phải đăng nhập lại.
-
-4. **An toàn 100% (Safe & Localhost Only)**:
-   - Tuyệt đối KHÔNG đọc token xác thực, KHÔNG đọc Keychain hay lưu mật khẩu.
-   - Tuyệt đối KHÔNG gửi bất kỳ request nào ra ngoài Internet.
-   - File snapshot được phân quyền bảo mật `0600` (chỉ user hiện tại có quyền đọc/ghi).
-
-5. **Skill tích hợp sẵn cho Agent (`quota-tracker`)**:
-   - Bạn chỉ cần hỏi agent: *"Xem quota hiện tại"*, *"Account nào đã hồi?"*, hoặc gõ `/quota`, agent sẽ tự động hiển thị bảng so sánh trực quan.
+A native plugin built for the **Google Antigravity Customization System** (Antigravity 2.0 Desktop & CLI). It automatically tracks, caches, and compares AI model rate limits across multiple Antigravity Pro accounts, complete with real-time offline replenishment countdowns, model multi-filtering, and intelligent account switch recommendations.
 
 ---
 
-## 📂 Cấu trúc Plugin
+## Architecture Overview
+
+```mermaid
+flowchart TD
+    subgraph Host["Antigravity Host Environment"]
+        App["Antigravity Desktop 2.0"]
+        LS["language_server (127.0.0.1 RPC)"]
+        App --> LS
+    end
+
+    subgraph Plugin["antigravity-quota-tracker"]
+        Hook["Lifecycle Hook (SessionStart / Stop)"]
+        Cache[("~/.antigravity_quota_snapshots.json\n(Local Cache, Mode 0600)")]
+        Sidecar["Auxiliary Side Pane (Sidecar Webview)"]
+        CLI["Terminal CLI (quota_tracker.py)"]
+        Skill["Agent Skill (quota-tracker)"]
+    end
+
+    LS -->|Local RPC Query| Hook
+    Hook -->|Persist Snapshot| Cache
+    Cache -->|Read & Project ETA| Sidecar
+    Cache -->|Read & Watch| CLI
+    Cache -->|Inspect & Recommend| Skill
+```
+
+---
+
+## Key Features
+
+1. **Native Auxiliary Side Pane Webview**:
+   - Integrates directly into Antigravity Desktop's side panel via `sidecar://quota-cache/quota-ui/`.
+   - **Antigravity 2.0 Native Theme**: Dynamically inherits `--vscode-*` CSS tokens, automatically adapting to light, dark, and custom editor themes.
+   - **Model Multi-Select Filters**: Filter by **Gemini**, **Argon**, or **Claude** (defaults to Gemini + Argon).
+   - **Live Countdown Ticker**: Second-by-second countdown until quota replenishes, formatted cleanly in local time.
+   - **Account Detail Drawer**: Slide-over panel with model breakdowns and switch diagnostics.
+
+2. **Automatic Lifecycle Hooks (`hooks.json`)**:
+   - Runs silently on `SessionStart` and `Stop` events.
+   - Queries the local `language_server` on `127.0.0.1` (`GetUserStatus` and `RetrieveUserQuotaSummary`).
+   - Automatically records current account quota into `~/.antigravity_quota_snapshots.json`.
+
+3. **Offline Replenishment Projection**:
+   - When switching accounts, previously cached accounts remain tracked.
+   - The plugin mathematically calculates recovery ETAs offline and updates the status to `🟢 100% (Replenished)` as soon as the reset timestamp passes—no re-login required.
+
+4. **100% Safe & Localhost-Only**:
+   - Zero external HTTP requests or telemetry.
+   - Never reads or stores auth tokens, cookies, passwords, or Keychain entries.
+   - Snapshots are written atomically with strict `0600` POSIX file permissions (accessible solely by your local user account).
+
+5. **Agent Skill (`quota-tracker`)**:
+   - Ask your agent directly in chat: *"Check quota"*, *"Which account is ready?"*, or type `/quota`.
+
+6. **Terminal CLI Dashboard**:
+   - Full-featured command-line utility with `--watch`, `--full`, and `--json` flags.
+
+---
+
+## Directory Structure
 
 ```text
-quota-cache/
-├── plugin.json                 # Khai báo plugin metadata cho Antigravity
-├── hooks.json                  # Lifecycle hooks (SessionStart & Stop)
+antigravity-quota-tracker/
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # Multi-version Python & Node syntax CI
+├── bin/
+│   └── quota_tracker.py         # Standalone Terminal CLI dashboard
 ├── hooks/
-│   └── record_snapshot.py      # Script ghi nhận snapshot tự động qua Localhost RPC
+│   └── record_snapshot.py       # Hook script for RPC capture
+├── sidecars/
+│   ├── quota-ui.zip             # Packaged auxiliary webview
+│   └── quota-ui/                # Webview source (HTML/CSS/JS/Node)
+│       ├── sidecar.json         # Antigravity sidecar registration
+│       ├── server.cjs           # Lightweight localhost server
+│       ├── index.html           # Dashboard layout
+│       ├── app.js               # Reactive render & countdown engine
+│       └── styles.css           # Native Antigravity CSS tokens
 ├── skills/
 │   └── quota-tracker/
-│       └── SKILL.md            # Skill hướng dẫn Agent tra cứu và gợi ý account switch
-├── sidecars/
-│   └── quota-ui/               # Auxiliary Side Pane Web UI
-│       ├── sidecar.json        # Đăng ký view SIDECAR_UI_ENTRYPOINT_AUX_PANE
-│       ├── server.cjs          # Node.js HTTP backend (thuần stdlib)
-│       ├── index.html          # HTML dashboard
-│       ├── app.js              # Logic render theo Category & live countdown
-│       └── styles.css          # Theme-aware CSS (VS Code tokens)
-├── bin/
-│   └── quota_tracker.py        # CLI Dashboard xem quota trực tiếp trong Terminal
-└── README.md
+│       └── SKILL.md             # Antigravity agent skill definition
+├── tests/                       # Pytest unit test suite
+├── hooks.json                   # Lifecycle hook configuration
+├── plugin.json                  # Plugin manifest
+├── pyproject.toml               # Project metadata & test configs
+└── LICENSE                      # MIT License
 ```
 
 ---
 
-## 🚀 Cài đặt & Kích hoạt
+## Installation
 
-### Liên kết plugin vào Antigravity
+### Prerequisites
+- Google Antigravity 2.0 (or Antigravity CLI `agy`)
+- Python 3.8+ (stdlib only, zero third-party dependencies required)
+- Node.js (for running the sidecar webview backend)
 
-```bash
-mkdir -p ~/.gemini/config/plugins
-ln -sfn "/Users/quy.doan/Workspace/personal/agy-quotas" ~/.gemini/config/plugins/quota-cache
-```
+### Step-by-Step Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/dmoreq/antigravity-quota-tracker.git ~/Workspace/personal/antigravity-quota-tracker
+   ```
+
+2. **Symlink into Antigravity Plugins directory**:
+   ```bash
+   mkdir -p ~/.gemini/config/plugins
+   ln -sfn "$HOME/Workspace/personal/antigravity-quota-tracker" ~/.gemini/config/plugins/quota-cache
+   ```
+
+3. **Restart or reload Antigravity**:
+   The plugin, lifecycle hooks, and agent skill will activate automatically.
 
 ---
 
-## 💻 Sử dụng
+## Usage
 
-### 1. Mở giao diện trên thanh bên (Auxiliary Side Pane)
-Bấm vào link sau trong khung chat:
-> [Mở Quota Dashboard](sidecar://quota-cache/quota-ui/)
+### 1. Auxiliary Side Pane
+Open the quota panel in your Antigravity side pane by clicking the link in any conversation:
+> [Open Quota Dashboard](sidecar://quota-cache/quota-ui/)
 
-### 2. Sử dụng CLI độc lập trong Terminal
+Keyboard shortcuts inside the webview:
+- `1`, `2`, `3`: Toggle Gemini, Argon, and Claude filters.
+- `⌘K` / `Ctrl+K`: Focus search bar.
+- `R`: Refresh data.
+- `Esc`: Close detail drawer or clear search.
+
+### 2. Terminal CLI
 ```bash
-# Xem bảng quota hiện tại của các tài khoản đã cache
+# Standard compact dashboard
 python3 ~/.gemini/config/plugins/quota-cache/bin/quota_tracker.py
 
-# Xem chi tiết toàn bộ các bể (Gemini, Claude, Argon, Weekly)
+# Full view (all 5h and weekly pools for Gemini, Claude, Argon)
 python3 ~/.gemini/config/plugins/quota-cache/bin/quota_tracker.py --full
 
-# Chế độ theo dõi tự động làm mới mỗi 15 giây
+# Live auto-refreshing watch mode (every 15s)
 python3 ~/.gemini/config/plugins/quota-cache/bin/quota_tracker.py --watch 15
+
+# Export raw JSON snapshot
+python3 ~/.gemini/config/plugins/quota-cache/bin/quota_tracker.py --json
 ```
+
+### 3. Agent Prompts
+Type in any Antigravity chat:
+- `"Check quota"`
+- `"Which account has replenished?"`
+- `"/quota"`
+
+---
+
+## Running Tests
+
+Run the unit test suite locally:
+
+```bash
+pip install pytest
+pytest tests/ -v
+```
+
+---
+
+## Security & Privacy
+
+- **Localhost Bound**: All communication strictly stays on `127.0.0.1` between Antigravity and the plugin scripts.
+- **Zero Credentials**: No passwords, OAuth refresh tokens, or API secrets are accessed or persisted.
+- **POSIX Protection**: Cache files are created with mode `0600` (`-rw-------`).
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.

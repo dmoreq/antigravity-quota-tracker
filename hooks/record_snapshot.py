@@ -203,6 +203,33 @@ def extract_snapshot(
     }
 
 
+def save_snapshot(snapshot: Dict[str, Any]) -> None:
+    email = snapshot.get("email")
+    if not email:
+        return
+
+    store: Dict[str, Any] = {"accounts": {}}
+    if SNAPSHOT_FILE.exists():
+        try:
+            store = json.loads(SNAPSHOT_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            store = {"accounts": {}}
+
+    store.setdefault("accounts", {})[email] = snapshot
+
+    tmp_path = SNAPSHOT_FILE.with_suffix(".tmp")
+    try:
+        tmp_path.write_text(
+            json.dumps(store, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        os.chmod(tmp_path, 0o600)
+        tmp_path.replace(SNAPSHOT_FILE)
+    except Exception:
+        if tmp_path.exists():
+            tmp_path.unlink()
+
+
 def record_current_snapshot() -> None:
     address = os.environ.get("ANTIGRAVITY_LS_ADDRESS")
     csrf = os.environ.get("ANTIGRAVITY_CSRF_TOKEN")
@@ -225,28 +252,7 @@ def record_current_snapshot() -> None:
     if not snapshot:
         return
 
-    email = snapshot["email"]
-
-    store: Dict[str, Any] = {"accounts": {}}
-    if SNAPSHOT_FILE.exists():
-        try:
-            store = json.loads(SNAPSHOT_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            store = {"accounts": {}}
-
-    store.setdefault("accounts", {})[email] = snapshot
-
-    tmp_path = SNAPSHOT_FILE.with_suffix(".tmp")
-    try:
-        tmp_path.write_text(
-            json.dumps(store, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        os.chmod(tmp_path, 0o600)
-        tmp_path.replace(SNAPSHOT_FILE)
-    except Exception:
-        if tmp_path.exists():
-            tmp_path.unlink()
+    save_snapshot(snapshot)
 
 
 def main() -> None:

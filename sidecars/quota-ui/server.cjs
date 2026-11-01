@@ -78,30 +78,32 @@ function saveSnapshot(data) {
 }
 
 function computePoolStatus(pct, resetIso) {
-  if (pct >= 70) return 'ok';
-  if (pct >= 15) return 'warning';
   if (resetIso && new Date(resetIso) <= new Date()) return 'replenished';
+  if (pct > 40) return 'ok';
+  if (pct > 15) return 'warning';
   return 'critical';
 }
 
 function countdown(resetIso) {
   if (!resetIso) return null;
   const diff = Math.max(0, new Date(resetIso) - Date.now());
-  if (diff === 0) return '✅ Đã hồi đầy';
+  if (diff === 0) return '✓ Ready';
   const totalMin = Math.floor(diff / 60_000);
   const d = Math.floor(totalMin / 1440);
   const h = Math.floor((totalMin % 1440) / 60);
   const m = totalMin % 60;
   if (d > 0) return `${d}d ${h}h ${String(m).padStart(2, '0')}m`;
-  return `${h}h ${String(m).padStart(2, '0')}m`;
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  return `${m}m`;
 }
 
 function formatLocalTime(isoStr) {
   if (!isoStr) return null;
   const d = new Date(isoStr);
-  if (isNaN(d)) return null;
+  if (isNaN(d.getTime())) return null;
   if (d <= new Date()) return null; // already replenished
-  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function extractLivePools(statusData, summaryData) {
@@ -160,7 +162,7 @@ function buildApiResponse(snapshot, activeEmail) {
         reset_time:  reset || null,
         status:      computePoolStatus(pct, reset),
         reset_local: formatLocalTime(reset),
-        countdown:   pct >= 100 ? '✅ Đã hồi đầy' : countdown(reset),
+        countdown:   pct >= 100 ? '✓ Ready' : countdown(reset),
         display_name: pool.display_name || key,
         window:       pool.window || (key.includes('5h') ? '5h' : 'weekly'),
       };
@@ -228,9 +230,15 @@ function refreshLiveData(cb) {
 
 const { URL } = require('url');
 
-// ── Static file serving ─────────────────────────────────────────────────────
+const ALLOWED_STATIC = new Set(['index.html', 'styles.css', 'app.js', 'sidecar.json']);
 
 function serveStatic(res, filename) {
+  if (!ALLOWED_STATIC.has(filename)) {
+    res.writeHead(404);
+    res.end('Not found');
+    return;
+  }
+
   const filepath = path.join(STATIC_DIR, filename);
   const ext      = path.extname(filename);
   try {
