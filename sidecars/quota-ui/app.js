@@ -163,7 +163,35 @@ function renderPoolCell(pool, cdId, isNA = false) {
 function renderGroup(grp, accounts) {
   const isRecommended = (email) => (lastData?.switch_recommendations || []).includes(email);
 
-  const rows = accounts.map(acc => {
+  // Hide accounts without Argon from the Argon model section
+  const groupAccounts = grp.id === 'argon'
+    ? accounts.filter(acc => Boolean(grp.getWk(acc)))
+    : accounts;
+
+  const colCount = grp.has5h ? 3 : 2;
+  const th5h     = grp.has5h ? `<th class="th-pool" scope="col">5-Hour</th>` : '';
+
+  const colsIndicator = grp.has5h
+    ? `<div class="section-cols cols-3"><span>5-Hour</span><span>Weekly</span></div>`
+    : `<div class="section-cols cols-2"><span>Weekly</span></div>`;
+
+  const headerHtml = `
+    <div class="section-head">
+      <span class="section-title">${esc(grp.title)}</span>
+      ${colsIndicator}
+    </div>`;
+  const theadClass = 'class="sr-only"';
+
+  if (!groupAccounts.length) {
+    return `
+      <section class="model-section" id="grp-${esc(grp.id)}">
+        ${headerHtml}
+        <div class="empty-msg">No accounts with ${esc(grp.title)} access.</div>
+      </section>
+    `;
+  }
+
+  const rows = groupAccounts.map(acc => {
     const rawEmail = acc.email || 'unknown';
     const emailKey = rawEmail.replace(/[^a-zA-Z0-9_-]/g, '_');
     const p5h      = grp.get5h(acc);
@@ -203,20 +231,6 @@ function renderGroup(grp, accounts) {
       ${tdwk}
     </tr>`;
   }).join('');
-
-  const colCount = grp.has5h ? 3 : 2;
-  const th5h     = grp.has5h ? `<th class="th-pool" scope="col">5-Hour</th>` : '';
-
-  const colsIndicator = grp.has5h
-    ? `<div class="section-cols cols-3"><span>5-Hour</span><span>Weekly</span></div>`
-    : `<div class="section-cols cols-2"><span>Weekly</span></div>`;
-
-  const headerHtml = `
-    <div class="section-head">
-      <span class="section-title">${esc(grp.title)}</span>
-      ${colsIndicator}
-    </div>`;
-  const theadClass = 'class="sr-only"';
 
   return `
     <section class="model-section" id="grp-${esc(grp.id)}">
@@ -286,7 +300,11 @@ function registerCountdowns(accounts) {
   const visibleGroups = MODEL_GROUPS.filter(g => selectedModels.has(g.id));
 
   for (const grp of visibleGroups) {
-    for (const acc of accounts) {
+    const groupAccounts = grp.id === 'argon'
+      ? accounts.filter(acc => Boolean(grp.getWk(acc)))
+      : accounts;
+
+    for (const acc of groupAccounts) {
       if (!acc || !acc.email) continue;
       const rawEmail = acc.email;
       const emailKey = rawEmail.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -446,9 +464,11 @@ function renderDrawerBody(acc) {
     { id: 'argon_weekly',  label: 'Argon Weekly',  get: (a) => a.pools?.argon_weekly, window: 'weekly' },
   ];
 
-  const poolItems = drawerPools.map(dp => {
-    const pool = dp.get(acc);
-    if (!pool) {
+  const poolItems = drawerPools
+    .filter(dp => dp.id !== 'argon_weekly' || Boolean(dp.get(acc)))
+    .map(dp => {
+      const pool = dp.get(acc);
+      if (!pool) {
       return `
         <div class="dr-pool-item">
           <div class="dr-pool-top">

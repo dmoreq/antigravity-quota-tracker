@@ -2,5 +2,5 @@
   "name": "quota-cache",
   "displayName": "Antigravity Quota Cache",
   "description": "Multi-account quota cache and tracker for Antigravity with offline replenishment countdown.",
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
