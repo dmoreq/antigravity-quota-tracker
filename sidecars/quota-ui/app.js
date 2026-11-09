@@ -355,6 +355,10 @@ function registerDrawerCountdowns(acc) {
 
 /* ── Main Dashboard Render ───────────────────────────────────────────── */
 function renderDashboard(data) {
+  if (data.theme) {
+    syncTheme(data.theme);
+  }
+
   const rpcOk = data.rpc_ok !== false;
   const timeFormatted = formatTime(data.updated_at);
 
@@ -716,6 +720,43 @@ el('drawer').addEventListener('keydown', (e) => {
   } else if (!e.shiftKey && document.activeElement === last) {
     e.preventDefault();
     first.focus();
+  }
+});
+
+/* ── Theme Synchronization with Antigravity ─────────────────────────── */
+function syncTheme(themeConfig) {
+  if (!themeConfig) return;
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const activePreset = isDark
+    ? (themeConfig.preset_dark || 'One Dark Pro')
+    : (themeConfig.preset_light || 'Default Light');
+
+  const slug = activePreset
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
+  document.documentElement.setAttribute('data-theme', slug);
+  try { localStorage.setItem('agy_theme', slug); } catch { /* ignore */ }
+
+  const badge = el('theme-badge');
+  if (badge) {
+    badge.textContent = activePreset;
+    badge.title = `Theme synchronized with Antigravity: ${activePreset}`;
+  }
+}
+
+// React dynamically to host OS/IDE light/dark changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (lastData?.theme) {
+    syncTheme(lastData.theme);
+  }
+});
+
+// React to possible postMessage events from host window
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.theme) {
+    syncTheme(typeof e.data.theme === 'string' ? { preset_dark: e.data.theme, preset_light: e.data.theme } : e.data.theme);
   }
 });
 

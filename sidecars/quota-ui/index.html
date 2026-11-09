@@ -1,9 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="one-dark-pro">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quota Dashboard</title>
+  <script>
+    try {
+      var s = localStorage.getItem('agy_theme');
+      if (s) document.documentElement.setAttribute('data-theme', s);
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -63,7 +69,10 @@
   <!-- ── Footer ────────────────────────────────────────────────────── -->
   <footer class="foot" id="footer">
     <span class="foot-safe">127.0.0.1 · Read-only RPC</span>
-    <span class="foot-ts" id="ts"></span>
+    <div class="foot-right">
+      <span class="foot-theme" id="theme-badge" title="Theme synchronized with Antigravity">One Dark Pro</span>
+      <span class="foot-ts" id="ts"></span>
+    </div>
   </footer>
 
   <!-- ── Drawer Detail ─────────────────────────────────────────────── -->

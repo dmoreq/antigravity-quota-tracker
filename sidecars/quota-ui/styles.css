@@ -47,6 +47,208 @@
   }
 }
 
+/* ── Theme Presets Synchronized with Antigravity ───────────────── */
+
+/* One Dark Pro (Default Antigravity Dark Theme) */
+[data-theme="one-dark-pro"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #282c34));
+  --bg-subtle:     var(--vscode-editor-background, #21252b);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(97, 175, 239, 0.16));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, #181a1f));
+  --border-strong: var(--vscode-focusBorder, rgba(97, 175, 239, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #abb2bf));
+  --fg-muted:      var(--vscode-descriptionForeground, #7f848e);
+  --fg-subtle:     var(--vscode-disabledForeground, #5c6370);
+
+  --c-ok:          var(--vscode-testing-iconPassed, #98c379);
+  --c-warn:        var(--vscode-editorWarning-foreground, #e5c07b);
+  --c-crit:        var(--vscode-editorError-foreground, #e06c75);
+  --c-active:      var(--vscode-focusBorder, #61afef);
+  --c-na:          var(--vscode-disabledForeground, rgba(171, 178, 191, 0.2));
+
+  --cd-fg:         #e5c07b;
+  --cd-bg:         rgba(229, 192, 123, 0.12);
+  --cd-border:     rgba(229, 192, 123, 0.3);
+}
+
+/* Dracula */
+[data-theme="dracula"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #282a36));
+  --bg-subtle:     var(--vscode-editor-background, #21222c);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.06));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(189, 147, 249, 0.18));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, #191a21));
+  --border-strong: var(--vscode-focusBorder, rgba(189, 147, 249, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #f8f8f2));
+  --fg-muted:      var(--vscode-descriptionForeground, #a0a0ab);
+  --fg-subtle:     var(--vscode-disabledForeground, #6272a4);
+
+  --c-ok:          var(--vscode-testing-iconPassed, #50fa7b);
+  --c-warn:        var(--vscode-editorWarning-foreground, #f1fa8c);
+  --c-crit:        var(--vscode-editorError-foreground, #ff5555);
+  --c-active:      var(--vscode-focusBorder, #bd93f9);
+  --c-na:          var(--vscode-disabledForeground, rgba(248, 248, 242, 0.2));
+
+  --cd-fg:         #f1fa8c;
+  --cd-bg:         rgba(241, 250, 140, 0.12);
+  --cd-border:     rgba(241, 250, 140, 0.3);
+}
+
+/* Tokyo Night */
+[data-theme="tokyo-night"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #1a1b26));
+  --bg-subtle:     var(--vscode-editor-background, #16161e);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(122, 162, 247, 0.16));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, #101014));
+  --border-strong: var(--vscode-focusBorder, rgba(122, 162, 247, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #a9b1d6));
+  --fg-muted:      var(--vscode-descriptionForeground, #787c99);
+  --fg-subtle:     var(--vscode-disabledForeground, #565f89);
+
+  --c-ok:          var(--vscode-testing-iconPassed, #9ece6a);
+  --c-warn:        var(--vscode-editorWarning-foreground, #e0af68);
+  --c-crit:        var(--vscode-editorError-foreground, #f7768e);
+  --c-active:      var(--vscode-focusBorder, #7aa2f7);
+  --c-na:          var(--vscode-disabledForeground, rgba(169, 177, 214, 0.2));
+
+  --cd-fg:         #e0af68;
+  --cd-bg:         rgba(224, 175, 104, 0.12);
+  --cd-border:     rgba(224, 175, 104, 0.3);
+}
+
+/* Monokai */
+[data-theme="monokai"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #272822));
+  --bg-subtle:     var(--vscode-editor-background, #1e1f1c);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.06));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(102, 217, 239, 0.16));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, #171814));
+  --border-strong: var(--vscode-focusBorder, rgba(102, 217, 239, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #f8f8f2));
+  --fg-muted:      var(--vscode-descriptionForeground, #a59f85);
+  --fg-subtle:     var(--vscode-disabledForeground, #75715e);
+
+  --c-ok:          var(--vscode-testing-iconPassed, #a6e22e);
+  --c-warn:        var(--vscode-editorWarning-foreground, #e6db74);
+  --c-crit:        var(--vscode-editorError-foreground, #f92672);
+  --c-active:      var(--vscode-focusBorder, #66d9ef);
+  --c-na:          var(--vscode-disabledForeground, rgba(248, 248, 242, 0.2));
+
+  --cd-fg:         #e6db74;
+  --cd-bg:         rgba(230, 219, 116, 0.12);
+  --cd-border:     rgba(230, 219, 116, 0.3);
+}
+
+/* Solarized Dark */
+[data-theme="solarized-dark"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #002b36));
+  --bg-subtle:     var(--vscode-editor-background, #073642);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(38, 139, 210, 0.18));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, #073642));
+  --border-strong: var(--vscode-focusBorder, rgba(38, 139, 210, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #839496));
+  --fg-muted:      var(--vscode-descriptionForeground, #657b83);
+  --fg-subtle:     var(--vscode-disabledForeground, #586e75);
+
+  --c-ok:          var(--vscode-testing-iconPassed, #859900);
+  --c-warn:        var(--vscode-editorWarning-foreground, #b58900);
+  --c-crit:        var(--vscode-editorError-foreground, #dc322f);
+  --c-active:      var(--vscode-focusBorder, #268bd2);
+  --c-na:          var(--vscode-disabledForeground, rgba(131, 148, 150, 0.2));
+
+  --cd-fg:         #b58900;
+  --cd-bg:         rgba(181, 137, 0, 0.12);
+  --cd-border:     rgba(181, 137, 0, 0.3);
+}
+
+/* Solarized Light */
+[data-theme="solarized-light"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #fdf6e3));
+  --bg-subtle:     var(--vscode-editor-background, #eee8d5);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(0, 0, 0, 0.04));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(38, 139, 210, 0.12));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, #e0dac6));
+  --border-strong: var(--vscode-focusBorder, rgba(38, 139, 210, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #657b83));
+  --fg-muted:      var(--vscode-descriptionForeground, #839496);
+  --fg-subtle:     var(--vscode-disabledForeground, #93a1a1);
+
+  --c-ok:          var(--vscode-testing-iconPassed, #859900);
+  --c-warn:        var(--vscode-editorWarning-foreground, #b58900);
+  --c-crit:        var(--vscode-editorError-foreground, #dc322f);
+  --c-active:      var(--vscode-focusBorder, #268bd2);
+  --c-na:          var(--vscode-disabledForeground, rgba(101, 123, 131, 0.2));
+
+  --cd-fg:         #b58900;
+  --cd-bg:         rgba(181, 137, 0, 0.1);
+  --cd-border:     rgba(181, 137, 0, 0.25);
+}
+
+/* Default Light */
+[data-theme="default-light"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #ffffff));
+  --bg-subtle:     var(--vscode-editor-background, #f8fafc);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(0, 0, 0, 0.04));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(99, 102, 241, 0.08));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, rgba(0, 0, 0, 0.08)));
+  --border-strong: var(--vscode-focusBorder, rgba(99, 102, 241, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #0f172a));
+  --fg-muted:      var(--vscode-descriptionForeground, #475569);
+  --fg-subtle:     var(--vscode-disabledForeground, #64748b);
+
+  --c-ok:          var(--vscode-testing-iconPassed, #16a34a);
+  --c-warn:        var(--vscode-editorWarning-foreground, #d97706);
+  --c-crit:        var(--vscode-editorError-foreground, #dc2626);
+  --c-active:      var(--vscode-focusBorder, #4f46e5);
+  --c-na:          var(--vscode-disabledForeground, rgba(0, 0, 0, 0.15));
+
+  --cd-fg:         #d97706;
+  --cd-bg:         rgba(217, 119, 6, 0.1);
+  --cd-border:     rgba(217, 119, 6, 0.25);
+}
+
+/* Default Dark */
+[data-theme="default-dark"] {
+  --bg:            var(--vscode-sideBar-background, var(--vscode-editor-background, #18181b));
+  --bg-subtle:     var(--vscode-editor-background, #121214);
+  --bg-hover:      var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+  --bg-active:     var(--vscode-list-activeSelectionBackground, rgba(99, 102, 241, 0.12));
+
+  --border:        var(--vscode-sideBar-border, var(--vscode-widget-border, rgba(255, 255, 255, 0.08)));
+  --border-strong: var(--vscode-focusBorder, rgba(99, 102, 241, 0.4));
+
+  --fg:            var(--vscode-sideBar-foreground, var(--vscode-foreground, #f4f4f5));
+  --fg-muted:      var(--vscode-descriptionForeground, #a1a1aa);
+  --fg-subtle:     var(--vscode-disabledForeground, #71717a));
+
+  --c-ok:          var(--vscode-testing-iconPassed, #22c55e);
+  --c-warn:        var(--vscode-editorWarning-foreground, #f59e0b);
+  --c-crit:        var(--vscode-editorError-foreground, #ef4444);
+  --c-active:      var(--vscode-focusBorder, #6366f1);
+  --c-na:          var(--vscode-disabledForeground, rgba(255, 255, 255, 0.15));
+
+  --cd-fg:         var(--vscode-editorWarning-foreground, #f59e0b);
+  --cd-bg:         rgba(245, 158, 11, 0.12);
+  --cd-border:     rgba(245, 158, 11, 0.28);
+}
+
 /* ── Reset & Base ──────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -564,6 +766,23 @@ body {
   color:           var(--fg-subtle);
 }
 .foot-safe { color: var(--fg-subtle); }
+.foot-right {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+}
+.foot-theme {
+  display:     inline-flex;
+  align-items: center;
+  gap:         4px;
+  color:       var(--fg-subtle);
+  font-size:   11px;
+}
+.foot-theme::before {
+  content:   '◐';
+  font-size: 10px;
+  color:     var(--c-active);
+}
 .foot-ts   { font-family: var(--font-mono); }
 
 /* ── Drawer Detail ────────────────────────────────────────────── */

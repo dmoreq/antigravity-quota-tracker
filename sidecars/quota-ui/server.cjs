@@ -77,6 +77,29 @@ function saveSnapshot(data) {
   } catch { /* best-effort */ }
 }
 
+function getAntigravityTheme() {
+  const candidates = [
+    path.join(os.homedir(), 'Library/Application Support/Antigravity/app_storage.json'),
+    path.join(os.homedir(), '.config/Antigravity/app_storage.json'),
+    path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData/Roaming'), 'Antigravity/app_storage.json'),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+        return {
+          preset_dark:  data['theme-preset-dark']  || 'One Dark Pro',
+          preset_light: data['theme-preset-light'] || 'Default Light',
+        };
+      }
+    } catch { /* ignore */ }
+  }
+  return {
+    preset_dark:  'One Dark Pro',
+    preset_light: 'Default Light',
+  };
+}
+
 function computePoolStatus(pct, resetIso) {
   if (resetIso && new Date(resetIso) <= new Date()) return 'replenished';
   if (pct > 40) return 'ok';
@@ -207,6 +230,7 @@ function buildApiResponse(snapshot, activeEmail) {
     rpc_ok:                 activeEmail !== null,
     accounts,
     switch_recommendations: recommendations,
+    theme:                  getAntigravityTheme(),
   };
 }
 
@@ -247,12 +271,18 @@ function serveStatic(res, filename) {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    // Cache-bust static assets inside HTML
+    // Cache-bust static assets inside HTML & inject current theme preset
     if (filename === 'index.html') {
       const ts = Date.now();
+      const themeInfo = getAntigravityTheme();
+      const slug = (themeInfo.preset_dark || 'One Dark Pro')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
       let html = content.toString('utf8');
       html = html.replace('/styles.css', `/styles.css?t=${ts}`);
       html = html.replace('/app.js', `/app.js?t=${ts}`);
+      html = html.replace('data-theme="one-dark-pro"', `data-theme="${slug}"`);
       content = Buffer.from(html, 'utf8');
     }
 
