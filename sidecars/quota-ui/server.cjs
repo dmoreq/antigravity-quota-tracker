@@ -23,6 +23,7 @@ const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
   '.css':  'text/css; charset=utf-8',
+  '.svg':  'image/svg+xml',
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -254,7 +255,7 @@ function refreshLiveData(cb) {
 
 const { URL } = require('url');
 
-const ALLOWED_STATIC = new Set(['index.html', 'styles.css', 'app.js', 'sidecar.json']);
+const ALLOWED_STATIC = new Set(['index.html', 'styles.css', 'app.js', 'sidecar.json', 'icon.svg']);
 
 function serveStatic(res, filename) {
   if (!ALLOWED_STATIC.has(filename)) {
