@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="7" fill="#0D1117" />
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" stroke="#30363D" />
+  <!-- Outer Arc: Antigravity / Claude (Purple) -->
+  <path d="M7.5 22.5A11 11 0 1 1 24.5 22.5" stroke="#A855F7" stroke-width="2" stroke-linecap="round" />
+  <!-- Middle Arc: Gemini (Cyan) -->
+  <path d="M9.8 20.8A8.2 8.2 0 1 1 22.2 20.8" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" />
+  <!-- Inner Arc: Argon / Replenished (Emerald) -->
+  <path d="M12.2 19A5.4 5.4 0 1 1 19.8 19" stroke="#10B981" stroke-width="2" stroke-linecap="round" />
+  <!-- Center ETA Gauge Needle & Replenished Dot -->
+  <circle cx="16" cy="16.5" r="1.8" fill="#F0F6FC" />
+  <path d="M16 16.5L19.2 13.3" stroke="#F0F6FC" stroke-width="1.8" stroke-linecap="round" />
+  <circle cx="20.5" cy="11.5" r="1.5" fill="#10B981" />
+</svg>
